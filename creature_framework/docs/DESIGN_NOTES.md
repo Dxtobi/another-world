@@ -258,7 +258,59 @@ No art until T7, so the vector debug view carries the read. Formulas worth keepi
 3. **Depth by weight**, not just colour: the far leg gets `0.72 * reach` (foreshortening), a thinner line and a
    darker tint. The two legs stride in antiphase (`sin(flap_phase * 0.5 + lane * PI)`).
 
-## 8. Framework changes
+## 8. Authoring a creature as a scene
+
+The baker is a one-way translation, scene -> `CreatureRig`. Nothing in `core/` knows that a scene exists; every
+harness still asks `VultureRig.build()` for a `CreatureRig` and gets one.
+
+| Scene | Baked into |
+| --- | --- |
+| `RigPoint.position` | `PointDef.offset` — the rest offset from the creature origin |
+| `RigPoint.mass`, `base_depth` | `PointDef.mass`, `PointDef.base_depth` |
+| consecutive `RigPoint`s | `LinkDef(a=i, b=i+1)` rest = pose distance, stiffness 1.0 |
+| `RigLink.a/b/stiffness/rest_length` | extra `LinkDef`; `rest_length <= 0` means "pose distance" |
+| `RigLimb` parent | `LimbDef.anchor_point` = the parent point's baked index |
+| `RigLimb.position` | `LimbDef.local_offset` (spine frame: +x forward, +y belly) |
+| `RigLimb.kind/style/lane/reach` | `LimbDef.kind/style/lane/reach` |
+| `front_point/center_point/rear_point` | `CreatureRig.front_point/center_point/rear_point` (names -> indices) |
+| `locomotor_flags` | `rig.locomotors` through `LocomotorCatalog`, in fly-then-climb order |
+| `tuning` | deep copy into `rig.tuning` |
+
+Why the layout is shaped that way:
+
+- **Point order is the index**, so the inspector does not expose integer indices that go stale when a point is
+  added or rearranged. The three roles are stored by *name* and resolved to indices at bake.
+- **A limb's parent is its anchor.** "Add a leg to the chest" is an editor reparent, and there is no second
+  anchor field to drift out of sync.
+- **Consecutive links are automatic.** A spine is defined by the order the points appear in; `RigLink` exists only
+  for the extra members (the vulture's weak front->rear bend-resist). Moving a point changes the rest length,
+  because the rest pose *is* the scene pose.
+- **Only positions bake.** Point/limb rotation and scale are rejected by validation rather than silently
+  discarded. The solver owns the runtime transform; a rest offset is a position, not a pose. (The root's own
+  transform is not read at all.)
+- **Limbs bake in point order, then child order**, so `LimbSystem` indices are stable for a given scene.
+
+Validation (all reported by `validate()`, and `build_rig()` returns `null` while anything is wrong): >= 3 points;
+unique non-empty names; `mass > 0`; finite positions; no rotation/scale; the three role names exist and differ;
+limbs are direct children of a `RigPoint` with a known `style`, a `lane` of -1/+1, `reach > 0`; link endpoints
+exist and differ, stiffness 0..1, finite positive rest lengths; at least one locomotor flag and no unknown bits;
+every tuning value finite. The **Validate rig** inspector button prints the same list.
+
+Two Godot 4.7 details worth remembering:
+
+- `@export_enum` rejects `StringName` ("requires int/String/arrays of them"). `RigLimb.kind`/`style` are therefore
+  `String` in the inspector and converted to `StringName` at bake. The data layer stays typed.
+- A `.gd` that failed to parse once can stay broken in a running editor even after the file is fixed; the MCP
+  editor needed a filesystem scan plus a scene reload before the new exported fields appeared. Headless
+  `--check-only` reads the global class cache from `.godot/`, so a brand-new `class_name` needs an editor scan
+  before `--check-only` can resolve it.
+
+The preview is editor-only drawing on the same nodes: `RigPoint` rings with a centred name above (mass/depth only
+when non-default), `RigLimb` a solid stub plus a dashed reach guide with its label beside the tip (far limbs to the
+left, near to the right, keyed by `lane`), `RigBlueprint` spine/brace links, an origin cross and a header centred
+over the rest pose. `RigDraw.text()` adds a dark outline so labels survive any background. None of it is baked.
+
+## 9. Framework changes
 (Record here any time a new creature forced an edit in `core/`, and why.)
 
 - **T0 (flight tuning):** no `core/` edit. All changes are inside `locomotors/fly_locomotor.gd`
@@ -282,3 +334,8 @@ No art until T7, so the vector debug view carries the read. Formulas worth keepi
   grip-search policy and belongs with the grip code, not in a locomotor. `release_all` previously had no way to
   prevent immediate re-gripping, so the launch could not leave the wall. Existing callers are unaffected by the
   default cooldown.
+- **Authoring (new `LimbDef.style`):** the only data-layer change for scene authoring: an additive `style`
+  `StringName` (`default`/`flap`/`walk2`/`reach`/`dangle`/`tentacle`) between `kind` and `anchor_point`. Nothing
+  reads it yet — T9 binds the cosmetic behaviour to the catalog — but baking it now means a style picked in the
+  inspector is never silently dropped. `kind` stays the coarse debug/collision family, so existing code that
+  switches on `kind` is untouched.

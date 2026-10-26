@@ -1,0 +1,65 @@
+[gd_scene load_steps=5 format=3 uid="uid://cfvulturebp1"]
+
+[ext_resource type="Script" path="res://creature_framework/authoring/rig_blueprint.gd" id="1_blueprint"]
+[ext_resource type="Script" path="res://creature_framework/authoring/rig_point.gd" id="2_point"]
+[ext_resource type="Script" path="res://creature_framework/authoring/rig_limb.gd" id="3_limb"]
+[ext_resource type="Script" path="res://creature_framework/authoring/rig_link.gd" id="4_link"]
+
+[node name="Vulture" type="Node2D"]
+script = ExtResource("1_blueprint")
+front_point = &"front"
+center_point = &"center"
+rear_point = &"rear"
+locomotor_flags = 3
+
+[node name="front" type="Node2D" parent="."]
+position = Vector2(40, 0)
+script = ExtResource("2_point")
+mass = 1.0
+
+[node name="center" type="Node2D" parent="."]
+script = ExtResource("2_point")
+mass = 1.5
+
+[node name="wing_far" type="Node2D" parent="center"]
+position = Vector2(2, -7)
+script = ExtResource("3_limb")
+kind = "wing"
+style = "flap"
+lane = -1
+reach = 95.0
+
+[node name="wing_near" type="Node2D" parent="center"]
+position = Vector2(2, -7)
+script = ExtResource("3_limb")
+kind = "wing"
+style = "flap"
+lane = 1
+reach = 95.0
+
+[node name="rear" type="Node2D" parent="."]
+position = Vector2(-40, 0)
+script = ExtResource("2_point")
+mass = 1.0
+
+[node name="leg_far" type="Node2D" parent="rear"]
+position = Vector2(-4, 5)
+script = ExtResource("3_limb")
+kind = "leg"
+style = "walk2"
+lane = -1
+reach = 55.0
+
+[node name="leg_near" type="Node2D" parent="rear"]
+position = Vector2(1, 8)
+script = ExtResource("3_limb")
+kind = "leg"
+style = "walk2"
+lane = 1
+reach = 55.0
+
+[node name="weak_bend" type="Node" parent="."]
+script = ExtResource("4_link")
+a = &"front"
+b = &"rear"
+stiffness = 0.15

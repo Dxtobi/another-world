@@ -6,14 +6,15 @@ A reusable framework for building **many different creatures with many different
 Inspired by the Rain World animation approach (GDC talk "The Rain World Animation Process"): a cheap, stable
 **logic layer** (points + distance constraints) decorated by a heavy **cosmetic layer** that only ever *reads* the logic.
 
-> **Status:** T0-T6 done. The framework lives inside the *Another World* project (`res://creature_framework/`),
-> runs on Godot 4.7.1, and is verified by a self-terminating 60 s scripted run (0 errors, 0 NaN, bounded speeds,
-> no single-frame pose pops), a world harness that checks the real level's drawn polygons and path grids, a
-> flight harness that flies a slalom to a goal, a grip harness that latches limbs onto a wall, a climb
-> harness that crawls a wall hand-over-hand and sags with no grips, and a mode harness that lands, climbs,
-> launches and refuses to switch when the goal is in open air. Steps 1-6 (Body, Intent/Brain, LocoManager,
-> FlyLocomotor, debug view, world query, path following, limb grips, climb locomotor, mode switching) are
-> implemented; the editor-authoring layer and T7 (depth) are next.
+> **Status:** T0-T6 done, plus the editor-authoring layer. The framework lives inside the *Another World*
+> project (`res://creature_framework/`), runs on Godot 4.7.1, and is verified by a self-terminating 60 s
+> scripted run (0 errors, 0 NaN, bounded speeds, no single-frame pose pops), a world harness that checks the
+> real level's drawn polygons and path grids, a flight harness that flies a slalom to a goal, a grip harness
+> that latches limbs onto a wall, a climb harness that crawls a wall hand-over-hand and sags with no grips, a
+> mode harness that lands, climbs, launches and refuses to switch when the goal is in open air, and an
+> authoring harness that bakes the authored vulture scene back to the exact reference rig. Steps 1-6 (Body,
+> Intent/Brain, LocoManager, FlyLocomotor, debug view, world query, path following, limb grips, climb
+> locomotor, mode switching) and the scene-based rig editor are implemented; T7 (depth) is next.
 
 Requires **Godot 4.7+** (developed against 4.7.1).
 
@@ -25,6 +26,8 @@ a wall while the goal slides up and down it, with the grip count in the HUD.
 For the T6 mode read, open `creature_framework/dev/mode_demo.tscn` and press F6: the goal alternates between
 the wall and open air, so the vulture lands, climbs, launches off the wall and returns. The HUD shows the active
 locomotor, both blend weights, the grip count and the current phase.
+To author a creature, open `creature_framework/creatures/vulture.tscn`: the rig is a normal scene, and the
+**Validate rig** button in the inspector checks it before anything runs.
 The game's own main scene is untouched.
 
 ---
@@ -35,8 +38,9 @@ The game's own main scene is untouched.
 2. **Locomotors never move things directly.** They only call `out.add_accel(point, accel)` and
    `out.set_limb_target(limb, world_pos)` on the `MoveOutput`. The `LocoManager` blends them by weight.
 3. **Brains only write an `Intent`.** They never touch the body or call locomotor code.
-4. **Creatures are data.** A new creature is a new `CreatureRig` builder in `rigs/` plus a list of locomotor
-   classes. Adding a creature must not require editing `core/`. If it does, fix the abstraction, not the creature.
+4. **Creatures are data.** A new creature is a new authored rig scene in `creatures/` (points, limbs, links,
+   locomotor choices, tuning) — or, for a code-only test, a builder in `rigs/`. Adding a creature must not require
+   editing `core/`. If it does, fix the abstraction, not the creature.
 5. **Never assign a position/angle/scale directly for visuals.** Run it through `Steering.damp_f/damp_v`.
 6. **Units:** pixels and seconds. Accelerations are px/s^2. Logic runs in `_physics_process` at a fixed 60 Hz.
 7. **Typing:** static types everywhere, 4-space indentation, one `class_name` per file.
@@ -67,6 +71,15 @@ core/
   creature.gd        glue node + proxy variables + debug draw
 brains/mouse_brain.gd                 debug brain (goal = mouse)
 brains/demo_brain.gd                  scripted brain for reproducible T0 runs
+authoring/
+  rig_blueprint.gd     authors a CreatureRig as a scene: bake, validation, editor preview
+  rig_point.gd         one spine point (position = rest offset, mass, base_depth)
+  rig_limb.gd          one limb, child of its anchor point (kind/style/lane/reach)
+  rig_link.gd          extra distance constraint between two named points
+  limb_style_catalog.gd  valid limb style ids + kind/bone hints
+  locomotor_catalog.gd   authored locomotor flags -> GDScript classes
+  rig_draw.gd          outlined-label helper shared by the @tool nodes
+creatures/vulture.tscn                the authored vulture rig: the source of truth
 dev/creature_test.tscn                one creature + HUD; 60 s self-terminating metrics run
 dev/world_test.tscn                   T2 harness: real-level oracle, dive test, path grids (exits non-zero)
 dev/path_test.tscn                    T3 harness: up-and-down slalom flight to a goal (exits non-zero)
@@ -75,9 +88,10 @@ dev/climb_test.tscn                   T5 harness: wall climb, gait cycle, sway, 
 dev/climb_demo.tscn                   T5 live demo: visible wall, oscillating goal, HUD grip count
 dev/mode_test.tscn                    T6 harness: land/climb/launch, flight-only, ambiguous goal (exits non-zero)
 dev/mode_demo.tscn                    T6 live demo: wall vs open-air goal, mode HUD + path overlay
+dev/authoring_test.tscn               authoring harness: scene bake, mutation, validation, runtime (exits non-zero)
 locomotors/fly_locomotor.gd           flight: flap lift + glide lift + path steering + wall feelers
 locomotors/climb_locomotor.gd         climbing: grip-centroid body spring + hand-over-hand gait
-rigs/vulture_rig.gd                   3-point spine, 2 wings, 2 legs
+rigs/vulture_rig.gd                   loads `creatures/vulture.tscn` and bakes it (harness entry point)
 docs/DESIGN_NOTES.md                  algorithms and reference code for the remaining tasks
 ```
 
@@ -307,34 +321,95 @@ Read `docs/DESIGN_NOTES.md` for the algorithms referenced below.
 
 ---
 
-## Planned: editor authoring (after T6, before art)
+## Editor authoring (pre-T7) ✅ done
 
-The point of the framework is that every creature is data, not code. The end state:
+Rigs are **scenes**, not GDScript builders. `creatures/vulture.tscn` is the source of truth for the
+vulture: points, masses, links, limbs, styles, locomotor choices and tuning are all editable in the
+inspector, and the rest of the framework consumes the same `CreatureRig` Resource it always did.
 
 ```
-creature.tscn
-└─ Creature
-   ├─ Points          places with the mouse, names them
-   │  ├─ head      (mass 1.0, is_head)
-   │  ├─ chest     (mass 1.5)          <- "which part is heavier"
-   │  └─ tail      (mass 0.7)
-   ├─ Limbs           "add leg to chest"
-   │  ├─ wing_l  (kind=wing, style=flap,   lane=-1, reach=95)
-   │  ├─ wing_r  (kind=wing, style=flap,   lane=+1)
-   │  ├─ leg_l   (kind=leg,  style=walk2,  lane=-1)
-   │  └─ tent_1  (kind=limb, style=tentacle, segments=6)
-   ├─ Brain           per-creature movement pattern / behaviour
-   └─ Skin            one sprite child per point and limb
+Vulture                 (RigBlueprint)   front/centre/rear point names, locomotor flags, tuning
+├─ front                (RigPoint)       position = rest offset, mass, base_depth
+├─ center               (RigPoint)
+│  ├─ wing_far          (RigLimb)        kind/style/lane/reach, position = offset from the anchor
+│  └─ wing_near         (RigLimb)
+├─ rear                 (RigPoint)
+│  ├─ leg_far           (RigLimb)
+│  └─ leg_near          (RigLimb)
+└─ weak_bend            (RigLink)        extra constraint between two named points
 ```
 
-- Rigs stop being `VultureRig.build()` in GDScript and become a scene: `@tool` point/limb nodes you place, with
-  `CreatureRig` baked from them at runtime (`offset` = rest pose; the solver still owns the motion).
-- Limb `style` becomes a registry (`flap`, `walk2`, `reach`, `dangle`, `tentacle`), one small behaviour class each,
-  so "tentacle type of legs" is a choice in the inspector, not a new creature script.
-- Sprites are cosmetic children only. **Until a part has a sprite, the debug view draws its dot/line/square** — a
-  creature with no art is fully playable, and swapping in art cannot change how it moves.
+### How a scene becomes a rig
 
-Do this after locomotion (T2-T6) is proven, so the authoring layer is built on a model that already works.
+- **Points are baked in scene order**; that order is the point index. `front_point` / `center_point` /
+  `rear_point` refer to nodes by name, so reordering points does not break the rig.
+- **A limb is a direct child of its anchor point.** Its `position` is `local_offset` in the spine frame
+  (+x forward, +y belly), and its parent *is* `anchor_point`; there is no second place to say "which
+  point". `RigPoint` and `RigLimb` have transform notifications, so the preview follows a drag/rotate live.
+- **Consecutive points are linked automatically** at stiffness 1.0 with rest length = the rest-pose
+  distance. `RigLink` adds any *other* member (the vulture's weak front→rear bend-resist at 0.15).
+  `rest_length <= 0` means "use the current pose distance".
+- **Only positions are baked.** Point/limb rotation and scale are *rejected*, not silently ignored: the
+  runtime solver owns the transform, and a rest offset is a position, not a pose.
+- **Limbs bake in point order, then child order** (wing_far, wing_near, leg_far, leg_near for the
+  vulture), so indices in `LimbSystem` are stable and reproducible.
+- `tuning` is deep-copied per bake (`StringName -> number` overrides of locomotor defaults).
+
+### Validation and failure
+
+`RigBlueprint.validate()` returns human-readable problems; `build_rig()` returns `null` (without
+logging) while any exist, so a broken scene never half-builds. The **Validate rig** button in the
+inspector prints the result to the Output panel. It checks:
+
+- at least 3 points, unique non-empty names, `mass > 0`, finite positions, no point rotation/scale;
+- `front`/`centre`/`rear` all exist and are three different points;
+- limbs are direct children of a `RigPoint`, have a name/kind, a style in `LimbStyleCatalog`, `lane`
+  of -1 or +1, `reach > 0`, a finite position, no rotation/scale;
+- link endpoints exist, are distinct, and `stiffness` is 0..1 with a finite positive `rest_length`;
+- at least one locomotor is selected, with no unknown flag bits;
+- every `tuning` value is a finite number.
+
+`VultureRig.build()` is the thin loader every harness already calls: it loads the packed scene,
+instantiates it, validates, logs each error with a `VultureRig:` prefix, and returns the baked rig.
+No test or creature code needs to know that rigs come from scenes now.
+
+### Inspectors and registries
+
+- **`RigPoint`**: `mass` (1.0 default), `base_depth` (-1 far .. +1 near, reserved for T7).
+- **`RigLimb`**: `kind` (`wing`/`leg`/`tentacle`/`claw`/`fin`), `style` (`default`/`flap`/`walk2`/
+  `reach`/`dangle`/`tentacle`), `lane` (`Far:-1`/`Near:1`), `reach`, `show_reach`.
+- **`RigBlueprint`**: the three point names, `locomotor_flags` (`Fly`, `Climb`), `tuning`, **Validate rig**.
+- `LimbStyleCatalog` owns the style ids, plus a `kind` hint and a suggested bone count per style
+  (wing 1, leg 2, dangle 3, tentacle 6). T9 binds the actual behaviour, but the ids already ride
+  through the bake, so a style chosen in the inspector can never be dropped.
+- `LocomotorCatalog` maps authored bits to classes: `Fly = 1`, `Climb = 2`, emitted **fly first, then
+  climb** because that order decides the manager's initial mode. Adding a locomotor = add the bit
+  constant, the branch, and the flag name on `RigBlueprint`.
+
+### Working in the scene
+
+The `@tool` nodes draw their own preview: spine links solid, extra links dashed, an origin cross, points
+as rings with their name above (mass/depth below, and only when non-default), limbs as a solid stub plus
+a dashed reach guide with the limb's name/style/reach beside its tip. Far limbs print to the left of
+their tip and near limbs to the right, so a far/near pair never stacks. Limb `kind` sets the colour.
+The scene is small — the vulture spine is 80 px — so author at 2-4x zoom. Nothing here is baked; it is
+editor-only drawing, and it disappears in the game.
+
+A new creature is a copy of `creatures/vulture.tscn`: rename the root, move/add points, add limbs under
+their anchor points, pick locomotor flags, and add a loader like `VultureRig` (or point the harness at the
+scene directly). No `core/` change.
+
+```
+godot --headless --path . res://creature_framework/dev/authoring_test.tscn
+```
+
+`dev/authoring_test.tscn` is the acceptance gate: 47 checks across four groups — the scene bakes to the
+exact reference vulture (3 points, 2 spine links + 1 brace, 4 limbs, anchors, styles, front/centre/rear,
+locomotor order), edits to nodes reach the bake (the scene really is the source of truth), invalid rigs
+are rejected (missing point, bad style, lane 0, orphan limb, self link, no locomotor), and a creature
+built from the loader moves 172 px in 2.5 s with 0 NaN points. `grip_test`, `climb_test`, `path_test`,
+`world_test` and `mode_test` all still pass unchanged against the scene-loaded rig.
+
 
 ---
 
@@ -356,6 +431,7 @@ Do this after locomotion (T2-T6) is proven, so the authoring layer is built on a
 - [x] T4 limb grips
 - [x] T5 climb locomotor
 - [x] T6 mode switching
+- [x] Editor authoring (scene rigs, registries, validation)
 - [ ] T7 depth layer
 - [ ] T8 smoothness pass
 - [ ] T9 cosmetics and off-screen switch

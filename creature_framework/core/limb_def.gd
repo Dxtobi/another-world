@@ -5,6 +5,7 @@ extends Resource
 
 @export var name: StringName = &""
 @export var kind: StringName = &"leg"    # &"wing", &"leg", &"tentacle", ...
+@export var style: StringName = &"default"  # LimbStyleCatalog id (gait/cosmetic behaviour)
 @export var anchor_point: int = 0
 @export var local_offset: Vector2 = Vector2.ZERO
 @export var reach: float = 40.0

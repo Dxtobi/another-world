@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cfauthoring01"]
+
+[ext_resource type="Script" path="res://creature_framework/dev/authoring_test.gd" id="1_authoring"]
+
+[node name="AuthoringTest" type="Node2D"]
+script = ExtResource("1_authoring")
