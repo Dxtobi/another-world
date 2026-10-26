@@ -156,6 +156,56 @@ func grip_count() -> int:
     return n
 
 
+## Average of all held grip points. With no grips this returns the body centre, so a
+## locomotor can use it without a null check.
+func grip_centroid() -> Vector2:
+    var sum: Vector2 = Vector2.ZERO
+    var n: int = 0
+    for i in rig.limbs.size():
+        if gripping[i] == 1:
+            sum += grip_pos[i]
+            n += 1
+    if n == 0:
+        return c.body.pos[rig.center_point]
+    return sum / float(n)
+
+
+## Normalized sum of the held grips' outward normals (which way the wall faces), or ZERO
+## when nothing is held. (`grip_normal` is the per-limb array, so this is the average.)
+func grip_normal_avg() -> Vector2:
+    var sum: Vector2 = Vector2.ZERO
+    for i in rig.limbs.size():
+        if gripping[i] == 1:
+            sum += grip_normal[i]
+    return sum.normalized() if sum.length_squared() > 0.0001 else Vector2.ZERO
+
+
+## Release the held limb furthest BEHIND the body along `tangent`, but only while at least
+## `min_other` limbs would still hold. This is the gait rule: never let go with fewer than
+## two other hands on the wall. `min_behind` is how far past the body a grip must be before
+## it counts as "behind" (small values would creep; large values would over-stretch).
+## Returns the released limb index, or -1 when nothing was let go.
+func release_furthest_behind(tangent: Vector2, min_other: int = 2, min_behind: float = 0.0) -> int:
+    if grip_count() - 1 < min_other:
+        return -1
+    if tangent.length_squared() < 0.0001:
+        return -1
+    var d: Vector2 = tangent.normalized()
+    var centre: Vector2 = c.body.pos[rig.center_point]
+    var best: int = -1
+    var best_behind: float = min_behind
+    for i in rig.limbs.size():
+        if gripping[i] == 0:
+            continue
+        var behind: float = (centre - grip_pos[i]).dot(d)
+        if behind > best_behind:
+            best_behind = behind
+            best = i
+    if best >= 0:
+        release(best)
+    return best
+
+
 ## How far a grip may be from the anchor before it is dropped.
 func max_reach(i: int) -> float:
     return rig.limbs[i].reach * REACH_SCALE

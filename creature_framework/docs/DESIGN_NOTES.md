@@ -136,36 +136,47 @@ Holding:
 - Release when `anchor.distance_to(grip_pos) > reach`, or by an explicit `release()`. That distance is the only
   automatic release; T5's gait rule releases the limb furthest behind the travel direction before it gets there.
 - Attempts are throttled to one per limb every 0.06 s (staggered), so four limbs do not fan rays on the same tick.
-- T4 is cosmetic: `Creature` pins `limb_tip` to the grip. Turning the grip into a body constraint is T5's job
-  (`grip_centroid` in section 4).
+- T4 was cosmetic: `Creature` pins `limb_tip` to the grip. T5 turns the grips into a body constraint by pulling
+  toward `grip_centroid()` along `grip_normal_avg()` (section 4); the tip pin remains for the visual limb.
 
-## 4. Climbing (T5)
+## 4. Climbing (implemented in ClimbLocomotor)
 
-The body does not move itself; the grips move it.
+The body does not move itself; the grips drag it. The wall frame is the average outward normal of the **held**
+grips. Only before the first grip does a `surface_near(body_center, 70)` probe find a face. Travel is the goal
+direction projected onto the wall (`t = normalize(wish - n * wish.dot(n))`), so a goal straight into the wall
+means "hold still" rather than "push inward".
 
-```
-func emit(dt, intent, out):
-    var dir = (target - body_center).normalized()       # target = next surface-path waypoint
-    var grips = limb_system.grip_count()
-    var grip_factor = grips / float(limbs.size())       # 0..1
-    update_limbs(dir)
-    var acc = Vector2.ZERO
-    if grips > 0:
-        acc += (grip_centroid + wall_normal_offset - center) * hang_stiffness   # spring to grips
-        acc += dir * climb_accel * grip_factor
-    acc += Vector2(0, gravity * (1 - grip_factor))                              # weight illusion
-    acc -= vel * (1 - grip_factor) * 0.5                                        # no purchase, no momentum
-    cap speed to climb_max_speed * lerp(0.3, 1.0, grip_factor)
-    out.add_accel(each point, acc)
+Per tick, before `body.step`:
 
-func update_limbs(dir):
-    # gait rule: only the limb furthest BEHIND the travel direction may release, and only if >= 2 others hold
-    for limb in gripping limbs:
-        if anchor.distance_to(grip) > max_reach: release (always allowed)
-        elif behind(limb, dir) is largest and grips > 2 and behind > threshold: release it
-    for limb in free limbs: try_grip(limb, anchor + dir * max_reach * 0.8, 8)
-```
-Tuning order: hang_stiffness (too high = rigid, too low = balloon), max_reach, release threshold, sample count.
+1. **Gait.** If not arrived, `limbs.release_furthest_behind(tangent, min_other = 2, min_behind = 20)`: at most one
+   held limb is let go per tick, and only the one furthest *behind* the body along the travel tangent, and only
+   while two others still hold. `LimbSystem.update` has already dropped any grip past `max_reach` (the hard
+   constraint), so the gait release is what starts the next reach before the body pulls that limb off.
+2. **Weight illusion.** `grip_factor = grips / limbs.size()`. Gravity is `900 * (1 - grip_factor)`, so fewer grips
+   means more hang. With zero grips the body also gets `-vel * 1.2`: it coasts to a stop instead of chasing the
+   goal with no purchase.
+3. **Body line.** `hold = grip_centroid + n * (30 + 8 * free_limbs)` — each free limb lets the belly hang a little
+   further out, so the hand-over-hand cycle rocks the body in and out instead of sliding up a rail. Each point's
+   desired position is `hold + tangent * point.offset.x - n * point.offset.y`, i.e. the spine is laid **along** the
+   travel direction with the belly toward the wall. A spring (`k = 14`) plus damping (`6`) pulls every point there.
+   `tangent * 240 * grip_factor` is the climb push, capped at `130 px/s` along the tangent.
+4. **Free limbs.** Each free limb reaches to `project(anchor, wall) + tangent * min(reach * 0.75, 52) + n * 5`, then
+   `LimbSystem`'s normal ray fan grips the face. The 5 px offset keeps the ray's start clear of the surface.
+
+`ClimbLocomotor.score()` returns 1 only while at least one grip is held; it is deliberately **not** in
+`VultureRig` yet. T6 adds the adjacency/landing score that hands a flyer over to it.
+
+Tuning order: `climb_hang_k` (too high = rigid, too low = balloon), `climb_free_sag` / `climb_hold_offset`,
+`climb_gait_behind`, then `climb_accel` / `climb_max_speed`.
+
+Acceptance (`dev/climb_test.tscn`): a vulture with only `ClimbLocomotor` starts spine-vertical on a wall at x 340.
+All four limbs hold at **0.05 s**; it climbs **238.1 px** (min y 191.9), comes within **15.5 px** of the goal and
+reaches it in **6.33 s**. The gait makes **37** grip changes; every limb releases and re-grips (`1111`). In/out
+sway is **3.32 px**, with **0** body points inside terrain. The no-grip case (open air, shoved to 180 px/s) sags
+**254.9 px** in 1 s, decays `vx 180 -> 21.2`, and never finds a grip.
+
+Demo (`dev/climb_demo.tscn`, MCP-verified at 640x360): the goal slides between y 180 and 380. The vulture climbs
+to ~204, descends to ~379, the HUD shows 4/4 grips (3 during a gait release), and the game log has no errors.
 
 ## 5. Mode switching and transitions (T6)
 
@@ -223,3 +234,7 @@ No art until T7, so the vector debug view carries the read. Formulas worth keepi
 - **T1 polish (debug draw in `core/creature.gd`):** body hull, wing silhouette and two-bone legs were added to the
   glue node so the framework can be judged before any art exists. They only read `thrust`/`flap_phase`/`facing` and
   write nothing back, so the one-way rule holds; the whole block is deleted when T7/T9 cosmetics land.
+- **T5 (grip helpers in `core/limb_system.gd`):** added `grip_centroid()`, `grip_normal_avg()` and
+  `release_furthest_behind()` because the climb body constraint needs to read all grips through one API instead of
+  reaching into the arrays from the locomotor. `grip_normal()` was renamed `grip_normal_avg()` to stop colliding
+  with the `grip_normal` member array; the array itself is unchanged. No behaviour changed for `FlyLocomotor`.

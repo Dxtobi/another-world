@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cfclimbdemo01"]
+
+[ext_resource type="Script" path="res://creature_framework/dev/climb_demo.gd" id="1_climbdemo"]
+
+[node name="ClimbDemo" type="Node2D"]
+script = ExtResource("1_climbdemo")

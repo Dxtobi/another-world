@@ -6,18 +6,21 @@ A reusable framework for building **many different creatures with many different
 Inspired by the Rain World animation approach (GDC talk "The Rain World Animation Process"): a cheap, stable
 **logic layer** (points + distance constraints) decorated by a heavy **cosmetic layer** that only ever *reads* the logic.
 
-> **Status:** T0-T4 done. The framework lives inside the *Another World* project (`res://creature_framework/`),
+> **Status:** T0-T5 done. The framework lives inside the *Another World* project (`res://creature_framework/`),
 > runs on Godot 4.7.1, and is verified by a self-terminating 60 s scripted run (0 errors, 0 NaN, bounded speeds,
 > no single-frame pose pops), a world harness that checks the real level's drawn polygons and path grids, a
-> flight harness that flies a slalom to a goal, and a grip harness that latches limbs onto a wall. Steps 1-4
-> (Body, Intent/Brain, LocoManager, FlyLocomotor, debug view, world query, path following, limb grips) are
-> implemented; T5 (climb locomotor) is next.
+> flight harness that flies a slalom to a goal, a grip harness that latches limbs onto a wall, and a climb
+> harness that crawls a wall hand-over-hand and sags with no grips. Steps 1-5 (Body, Intent/Brain, LocoManager,
+> FlyLocomotor, debug view, world query, path following, limb grips, climb locomotor) are implemented; T6
+> (mode switching and transitions) is next.
 
 Requires **Godot 4.7+** (developed against 4.7.1).
 
 **How to run it in this project:** open `creature_framework/dev/creature_test.tscn` and press F6.
 It runs the scripted `DemoBrain` (climb / hover / sink / bank, 6 s each) with metrics printed to the
 console. Set the environment variable `CF_MOUSE=1` to chase the cursor with `MouseBrain` instead.
+For the T5 climb read, open `creature_framework/dev/climb_demo.tscn` and press F6: a vulture clings to
+a wall while the goal slides up and down it, with the grip count in the HUD.
 The game's own main scene is untouched.
 
 ---
@@ -64,7 +67,10 @@ dev/creature_test.tscn                one creature + HUD; 60 s self-terminating 
 dev/world_test.tscn                   T2 harness: real-level oracle, dive test, path grids (exits non-zero)
 dev/path_test.tscn                    T3 harness: up-and-down slalom flight to a goal (exits non-zero)
 dev/grip_test.tscn                    T4 harness: wall latch, thin air, reach limit, hold/release (exits non-zero)
+dev/climb_test.tscn                   T5 harness: wall climb, gait cycle, sway, no-grip sag (exits non-zero)
+dev/climb_demo.tscn                   T5 live demo: visible wall, oscillating goal, HUD grip count
 locomotors/fly_locomotor.gd           flight: flap lift + glide lift + path steering + wall feelers
+locomotors/climb_locomotor.gd         climbing: grip-centroid body spring + hand-over-hand gait
 rigs/vulture_rig.gd                   3-point spine, 2 wings, 2 legs
 docs/DESIGN_NOTES.md                  algorithms and reference code for the remaining tasks
 ```
@@ -206,10 +212,31 @@ Read `docs/DESIGN_NOTES.md` for the algorithms referenced below.
   godot --headless --path . res://creature_framework/dev/grip_test.tscn
   ```
 
-### T5. ClimbLocomotor
+### T5. ClimbLocomotor  ✅ done
 - `locomotors/climb_locomotor.gd`: body pulled toward the grip centroid, limb gait rule (>= 2 other limbs holding
   before one may release the one furthest behind), weight illusion from grip count (see DESIGN_NOTES "Climbing").
 - **Accept:** the creature crawls up a vertical wall hand-over-hand with sway; with 0 grips it sags and slows.
+- **Done:** the grips are fixed world points; the body is dragged between them. The wall frame is the average
+  outward normal of the held grips (a `surface_near` probe only runs before the first grip), and travel is the goal
+  direction projected onto the wall. Each tick may release **one** limb: the one furthest behind the body along the
+  travel tangent, and only while two others still hold (`release_furthest_behind`). Free limbs reach ahead by
+  `min(reach * 0.75, 52)` and re-grip through the T4 ray fan. Every spine point is spring-pulled (`k = 14`) to a
+  wall-parallel line built from the grip centroid, with the belly 30 px off the face plus 8 px per free limb; that
+  free-limb sag is the visible in/out sway. Climb push is `240 * grip_factor` along the tangent, capped at 130 px/s.
+  Gravity and no-purchase damping are weighted by `1 - grip_factor`, so losing grips fakes weight: at zero grips the
+  creature sags and coasts to a stop instead of chasing the goal. **T5 keeps climb isolated**: `ClimbLocomotor` is
+  not in `VultureRig` yet and its `score()` only returns 1 while a grip is held; T6 adds the landing window and
+  adjacency score.
+  Verified by `dev/climb_test.tscn` (headless and through the live MCP editor, exits non-zero on failure): all four
+  limbs hold at **0.05 s**, it climbs **238.1 px** (min y 191.9), comes within **15.5 px** of the goal and reaches
+  it in **6.33 s**, with **37** grip changes, every limb released and re-gripped (`1111`), **3.32 px** of sway and
+  **0** body points inside terrain. The 0-grip creature sags **254.9 px** in 1 s, decays `vx 180 -> 21.2`, and never
+  grips. `dev/climb_demo.tscn` shows the same motion live with a goal sliding between y 180 and 380 (MCP run:
+  climbed to ~204, descended to ~379, 4/4 grips with a dip to 3 on a release, no errors).
+
+  ```
+  godot --headless --path . res://creature_framework/dev/climb_test.tscn
+  ```
 
 ### T6. Mode switching and transitions
 - `FlyLocomotor.score` / `ClimbLocomotor.score` use `WorldQuery` (surface adjacent? goal climb-reachable? grips lost?).
@@ -293,7 +320,7 @@ Do this after locomotion (T2-T6) is proven, so the authoring layer is built on a
 - [x] T2 real world (platform grids)
 - [x] T3 path following and avoidance
 - [x] T4 limb grips
-- [ ] T5 climb locomotor
+- [x] T5 climb locomotor
 - [ ] T6 mode switching
 - [ ] T7 depth layer
 - [ ] T8 smoothness pass
