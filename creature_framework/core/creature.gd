@@ -85,6 +85,13 @@ func anchor_pos(limb_index: int) -> Vector2:
     return body.pos[lm.anchor_point] + dir_to_world(lm.local_offset)
 
 
+## Same anchor, but on the interpolated render position, so the debug limbs stay
+## welded to the interpolated body hull at high speed.
+func anchor_render(limb_index: int, alpha: float) -> Vector2:
+    var lm: LimbDef = rig.limbs[limb_index]
+    return body.render_pos(lm.anchor_point, alpha) + dir_to_world(lm.local_offset)
+
+
 # ---------------------------------------------------------------- debug view (circles and lines only)
 func _draw() -> void:
     if body == null or not debug_draw:
@@ -96,24 +103,130 @@ func _draw() -> void:
     for i in n:
         rp[i] = to_local(body.render_pos(i, alpha))
 
+    _draw_body(rp)
     for l in rig.links:
-        draw_line(rp[l.a], rp[l.b], Color(0.6, 0.6, 0.7), 2.0)
+        draw_line(rp[l.a], rp[l.b], Color(0.6, 0.65, 0.8, 0.45), 1.0)
     for i in n:
-        if i == rig.front_point:
-            draw_circle(rp[i], 11.0, Color.ORANGE)
-        else:
-            draw_circle(rp[i], 8.0, Color.WHITE)
+        draw_circle(rp[i], 2.5, Color(1.0, 1.0, 1.0, 0.55))
 
     for i in rig.limbs.size():
         var lm: LimbDef = rig.limbs[i]
-        var col: Color = Color(0.5, 0.8, 1.0) if lm.kind == &"wing" else Color(0.9, 0.7, 0.4)
+        var is_wing: bool = lm.kind == &"wing"
+        var col: Color = Color(0.55, 0.82, 1.0) if is_wing else Color(0.95, 0.72, 0.42)
         if lm.lane < 0:
-            col = col.darkened(0.4)
-        var a: Vector2 = to_local(anchor_pos(i))
-        var t: Vector2 = to_local(limb_tip[i])
-        draw_line(a, t, col, 3.0)
-        draw_circle(t, 4.0, col)
+            col = col.darkened(0.35)
+        var a: Vector2 = to_local(anchor_render(i, alpha))
+        var t: Vector2 = to_local(anchor_render(i, alpha) + (limb_tip[i] - anchor_pos(i)))
+        if is_wing:
+            _draw_wing(a, t, col, lm)
+        else:
+            _draw_leg(a, t, col, lm)
+            draw_circle(t, 2.5, col)
 
     if intent.has_goal:
         draw_circle(to_local(intent.goal), 6.0, Color.RED)
         draw_arc(to_local(intent.goal), 14.0, 0.0, TAU, 24, Color(1.0, 0.3, 0.3, 0.6), 1.5)
+
+
+## Translucent tapered hull through the three spine points, so the limbs read as
+## attached to a body instead of four lines growing out of one dot. Debug only.
+func _draw_body(rp: PackedVector2Array) -> void:
+    var f: Vector2 = rp[rig.front_point]
+    var m: Vector2 = rp[rig.center_point]
+    var r: Vector2 = rp[rig.rear_point]
+    var axis: Vector2 = f - r
+    if axis.length_squared() < 0.0001:
+        return
+    var perp: Vector2 = axis.normalized().orthogonal()
+    # Widen toward the middle, taper at the head and into a tail.
+    var rf: float = 7.0
+    var rm: float = 11.0
+    var rr: float = 4.5
+    var poly: PackedVector2Array = PackedVector2Array([
+        f + perp * rf, m + perp * rm, r + perp * rr,
+        r - perp * rr, m - perp * rm, f - perp * rf,
+    ])
+    draw_colored_polygon(poly, Color(0.15, 0.17, 0.23, 0.88))
+    var outline: PackedVector2Array = poly.duplicate()
+    outline.append(poly[0])
+    draw_polyline(outline, Color(0.55, 0.62, 0.82, 0.9), 1.5)
+    draw_circle(f, rf + 0.5, Color(0.19, 0.23, 0.31, 0.95))
+    draw_circle(f, 2.5, Color.ORANGE)
+
+
+## A wing, not a fan: leading edge from the shoulder to the tip, a trailing edge
+## that sweeps back, and 3 feather ribs. Depth is sold by span and chord together —
+## turning toward camera makes it SHORT AND BROAD, edge-on makes it LONG AND THIN.
+func _draw_wing(a: Vector2, tip: Vector2, col: Color, lm: LimbDef) -> void:
+    var v: Vector2 = tip - a
+    var length: float = v.length()
+    if length < 1.0:
+        return
+    var d: Vector2 = v / length
+    var ds: float = maxf(0.0, -cos(flap_phase))                 # 0 on recovery, 1 mid downstroke
+    var presentation: float = clampf(0.62 * ds + 0.38 * (1.0 - absf(facing)), 0.0, 1.0)
+    var span: float = length * lerpf(1.0, 0.58, presentation)
+    var chord: float = lerpf(4.0, 34.0, presentation)
+    if lm.lane < 0:
+        chord *= 0.84
+        span *= 0.92
+    var t: Vector2 = a + d * span
+
+    # Trailing edge points backwards in the body frame, flattened onto the wing plane.
+    var back_w: Vector2 = dir_to_world(Vector2(-1.0, 0.0))
+    var back: Vector2 = (to_local(back_w) - to_local(Vector2.ZERO))
+    var trail: Vector2 = back - d * back.dot(d)
+    if trail.length_squared() < 0.0001:
+        trail = d.orthogonal()
+    trail = trail.normalized()
+
+    var edge_1: Vector2 = a + d * (span * 0.12) + trail * chord * 0.30
+    var edge_2: Vector2 = a + d * (span * 0.46) + trail * chord * 0.90
+    var edge_3: Vector2 = a + d * (span * 0.80) + trail * chord * 0.62
+    var lead: Vector2 = a + d * (span * 0.55) - trail * 1.2
+    var poly: PackedVector2Array = PackedVector2Array([a, edge_1, edge_2, edge_3, t, lead])
+    draw_colored_polygon(poly, Color(col.r, col.g, col.b, 0.20))
+    var outline: PackedVector2Array = poly.duplicate()
+    outline.append(poly[0])
+    draw_polyline(outline, col, 1.6)
+    for k: float in [0.30, 0.52, 0.74]:
+        var base: Vector2 = a + d * (span * k)
+        draw_line(base, a + d * (span * (k + 0.16)) + trail * chord * (0.55 - 0.35 * k),
+            col.darkened(0.15), 1.0)
+    draw_line(a, t, col.lightened(0.3), 2.0)          # leading edge, reads as the bone
+    draw_circle(t, 2.5, col)
+
+
+## Leg drawn as two bones with a knee. Depth reads through weight, not just colour:
+## the far leg is thinner, shorter (foreshortened) and darker than the near one.
+func _draw_leg(a: Vector2, tip: Vector2, col: Color, lm: LimbDef) -> void:
+    var near: bool = lm.lane > 0
+    var thigh: float = lm.reach * 0.52
+    var shin: float = lm.reach * 0.52
+    var back_w: Vector2 = dir_to_world(Vector2(-1.0, 0.0))
+    var bend: Vector2 = to_local(back_w) - to_local(Vector2.ZERO)
+    var knee: Vector2 = _two_bone_knee(a, tip, thigh, shin, bend)
+    var w: float = 3.5 if near else 2.0
+    draw_line(a, knee, col, w)
+    draw_line(knee, tip, col, w)
+    draw_circle(a, 2.0, col.darkened(0.25))
+    draw_circle(knee, 2.5 if near else 1.8, col.lightened(0.3))
+    # Short foot segment so the leg ends in a claw instead of a dot.
+    var shin_dir: Vector2 = (tip - knee).normalized()
+    if shin_dir.length_squared() > 0.0001:
+        var foot: Vector2 = tip + shin_dir.orthogonal() * (5.0 if near else 3.5)
+        draw_line(tip, foot, col, w)
+
+
+func _two_bone_knee(a: Vector2, tip: Vector2, thigh: float, shin: float, bend: Vector2) -> Vector2:
+    var d: Vector2 = tip - a
+    var dist: float = clampf(d.length(), 1.0, thigh + shin - 0.5)
+    var dir: Vector2 = d.normalized() if d.length() > 0.001 else Vector2.DOWN
+    var along: float = (thigh * thigh + dist * dist - shin * shin) / (2.0 * dist)
+    along = clampf(along, 0.0, thigh)
+    var height: float = sqrt(maxf(0.0, thigh * thigh - along * along))
+    var side: Vector2 = bend - dir * bend.dot(dir)       # perpendicular part of the bend hint
+    if side.length_squared() < 0.0001:
+        side = dir.orthogonal()
+    side = side.normalized()
+    return a + dir * along + side * height

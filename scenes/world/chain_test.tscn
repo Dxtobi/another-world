@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://c3uykxrwtjn7p"]
-
-[ext_resource type="Script" path="res://scenes/world/chain_test.gd" id="1_chain"]
-
-[node name="ChainTest" type="Node2D" unique_id=1148781930]
-script = ExtResource("1_chain")

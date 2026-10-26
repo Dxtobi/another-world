@@ -36,7 +36,7 @@ func emit(dt: float, intent: Intent, out: MoveOutput) -> void:
     var max_accel: float = c.tune(&"fly_accel", 900.0)
     var freq_min: float = c.tune(&"fly_freq_min", 1.5)
     var freq_max: float = c.tune(&"fly_freq_max", 5.0)
-    var wing_amp: float = c.tune(&"fly_wing_amp", 1.1)
+    var wing_amp: float = c.tune(&"fly_wing_amp", 1.35)
     var hover_thrust: float = c.tune(&"fly_hover_thrust", 0.38)   # baseline effort so lift survives the arrive-stop
     var hold_k: float = c.tune(&"fly_hold_k", 14.0)               # spring toward goal altitude (accel per px of error)
     var hold_cap: float = c.tune(&"fly_hold_cap", 1100.0)         # saturation of the hold spring
@@ -96,5 +96,12 @@ func _emit_limbs(out: MoveOutput, wing_amp: float) -> void:
             var wing_dir: Vector2 = Vector2.from_angle(PI + swing + float(lm.lane) * 0.22)
             out.set_limb_target(i, anchor + c.dir_to_world(wing_dir) * lm.reach)
         elif lm.kind == &"leg":
-            var leg_dir: Vector2 = Vector2(-0.45, 1.0).normalized()   # dangle down and back
-            out.set_limb_target(i, anchor + c.dir_to_world(leg_dir) * lm.reach * 0.8)
+            # Two legs, not one line copied twice: the far leg splays further out,
+            # sits shorter (it is behind the body) and strides in opposition to the
+            # near leg. The debug view draws it thinner and darker.
+            var near: bool = lm.lane > 0
+            var splay: float = float(lm.lane) * (0.30 if near else 0.44)
+            var stride: float = sin(c.flap_phase * 0.5 + (0.0 if near else PI)) * 0.15
+            var leg_dir: Vector2 = Vector2(-0.35 + splay + stride, 1.0).normalized()
+            var stretch: float = 0.90 if near else 0.72
+            out.set_limb_target(i, anchor + c.dir_to_world(leg_dir) * lm.reach * stretch)

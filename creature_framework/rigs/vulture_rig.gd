@@ -18,10 +18,12 @@ static func build() -> CreatureRig:
     rig.links.append(_link(1, 2, 40.0, 1.0))
     rig.links.append(_link(0, 2, 80.0, 0.15))   # weak bend-resist link: spine can flex but not fold
 
-    rig.limbs.append(_limb(&"wing_far", &"wing", 1, Vector2(6.0, -8.0), 95.0, -1))
-    rig.limbs.append(_limb(&"wing_near", &"wing", 1, Vector2(6.0, -8.0), 95.0, 1))
-    rig.limbs.append(_limb(&"leg_far", &"leg", 1, Vector2(-8.0, 10.0), 45.0, -1))
-    rig.limbs.append(_limb(&"leg_near", &"leg", 1, Vector2(-8.0, 10.0), 45.0, 1))
+    # Wings at the shoulders (centre point), legs at the hips (rear point), so the
+    # four limbs are not a star from one dot.
+    rig.limbs.append(_limb(&"wing_far", &"wing", 1, Vector2(2.0, -7.0), 95.0, -1))
+    rig.limbs.append(_limb(&"wing_near", &"wing", 1, Vector2(2.0, -7.0), 95.0, 1))
+    rig.limbs.append(_limb(&"leg_far", &"leg", 2, Vector2(-4.0, 5.0), 55.0, -1))
+    rig.limbs.append(_limb(&"leg_near", &"leg", 2, Vector2(1.0, 8.0), 55.0, 1))
 
     rig.locomotors.append(FlyLocomotor)
     return rig

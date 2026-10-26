@@ -64,6 +64,18 @@ docs/DESIGN_NOTES.md                  algorithms and reference code for the rema
 Per-tick order (in `Creature._physics_process`):
 `brain.think -> loco.update (emit forces) -> body.step -> world.resolve`. Cosmetics run in `_process`.
 
+### Debug view (dev aid; deleted when T7/T9 art lands)
+Circles and lines only, but it has to carry the read until then:
+
+- **Body**: a tapered hull through the three spine points plus a head disc, so limbs have something to attach to.
+- **Wing**: leading edge (shoulder → tip), a trailing edge swept back in the body frame, and 3 feather ribs.
+  A single `presentation` scalar widens the chord *and* shortens the span, so the wing is broad when it faces the
+  camera (downstroke, or turning through edge-on) and long/thin side-on — the Rain World depth swap.
+- **Leg**: two bones (`0.52 * reach` each) with the knee placed by the law of cosines, bending backwards. The far leg
+  is shorter (foreshortened), thinner and darker, and the two legs stride in antiphase, so it reads as two legs at
+  different depths rather than one line copied.
+- In `dev/creature_test.tscn`, **Z** toggles a 3.2× camera that follows the creature.
+
 ---
 
 ## Roadmap (do in order, one task at a time)

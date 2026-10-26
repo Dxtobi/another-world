@@ -111,6 +111,24 @@ Tuning order: hang_stiffness (too high = rigid, too low = balloon), max_reach, r
 - Wings: node per wing at the shoulder anchor, rotated by the wing logic angle; feather splay from `sin(flap_phase)`.
 - Everything here reads `Creature`/`Body` only. Off-screen: `VisibleOnScreenNotifier2D` -> set cosmetics `process_mode`/`visible`.
 
+### Debug-view stand-in (implemented now, replaced at T7/T9)
+
+No art until T7, so the vector debug view carries the read. Formulas worth keeping when the art lands:
+
+1. **Wing presentation** — one scalar drives both shape axes:
+   `presentation = clamp(0.62 * downstroke + 0.38 * (1 - abs(facing)), 0, 1)` with
+   `downstroke = max(0, -cos(flap_phase))`.
+   `span = reach * lerp(1.0, 0.58, presentation)` (short when toward camera) and
+   `chord = lerp(4, 34, presentation)` (broad when toward camera). Edge-on is the opposite on both, which is what
+   sells the turn — changing only the angle (a fan) reads as a hand, not a wing.
+   The silhouette is leading edge + trailing edge swept along the body's -x + feather ribs.
+2. **Two-bone knee** — `thigh = shin = 0.52 * reach`; with chord length `d = |tip - anchor|`,
+   `along = (thigh^2 + d^2 - shin^2) / (2d)`, `height = sqrt(thigh^2 - along^2)`, knee =
+   `anchor + dir * along + side * height`, where `side` is the component of the body's -x perpendicular to `dir`
+   (both knees bend backwards, so they never cross into a bowtie).
+3. **Depth by weight**, not just colour: the far leg gets `0.72 * reach` (foreshortening), a thinner line and a
+   darker tint. The two legs stride in antiphase (`sin(flap_phase * 0.5 + lane * PI)`).
+
 ## 8. Framework changes
 (Record here any time a new creature forced an edit in `core/`, and why.)
 
@@ -119,3 +137,6 @@ Tuning order: hang_stiffness (too high = rigid, too low = balloon), max_reach, r
 - **T0 (project fit):** the framework now lives inside *Another World* (`res://creature_framework/`) rather than
   its own project, and T2 will read the game's hand-drawn polygon platforms instead of a `TileMapLayer`. This is a
   project decision, not a core change; `WorldQuery`'s public API (`is_solid`, `resolve`) stays identical.
+- **T1 polish (debug draw in `core/creature.gd`):** body hull, wing silhouette and two-bone legs were added to the
+  glue node so the framework can be judged before any art exists. They only read `thrust`/`flap_phase`/`facing` and
+  write nothing back, so the one-way rule holds; the whole block is deleted when T7/T9 cosmetics land.

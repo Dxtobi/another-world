@@ -5,6 +5,7 @@ extends Node2D
 var creature: Creature
 var world: WorldQuery
 var label: Label
+var _cam: Camera2D
 
 var demo: bool = true
 var _metrics_t: float = 0.0
@@ -36,6 +37,13 @@ func _ready() -> void:
 	label = Label.new()
 	label.position = Vector2(12.0, 8.0)
 	layer.add_child(label)
+
+	# QA camera: follows the creature so a zoomed close-up is one key away (Z).
+	# At zoom 1 the framing is unchanged.
+	_cam = Camera2D.new()
+	_cam.zoom = Vector2.ONE
+	add_child(_cam)
+	_cam.make_current()
 
 
 func _physics_process(dt: float) -> void:
@@ -83,6 +91,14 @@ func _physics_process(dt: float) -> void:
 
 func _process(_dt: float) -> void:
 	queue_redraw()
+	if _cam != null:
+		_cam.position = creature.body.pos[creature.rig.center_point]
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	var key: InputEventKey = event as InputEventKey
+	if key != null and key.pressed and not key.echo and key.keycode == KEY_Z:
+		_cam.zoom = Vector2.ONE if _cam.zoom.x > 1.5 else Vector2(3.2, 3.2)
 	var lines: PackedStringArray = PackedStringArray()
 	lines.append("thrust %.2f   flap_phase %.1f   turn_rate %.2f   facing %+.2f" % [creature.thrust, creature.flap_phase, creature.turn_rate, creature.facing])
 	for l in creature.loco.locomotors:
