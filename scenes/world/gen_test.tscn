@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://brp4xfuur78yd"]
+
+[ext_resource type="Script" path="res://scenes/world/gen_test.gd" id="1_gentest"]
+
+[node name="GenTest" type="Node2D" unique_id=1125130074]
+script = ExtResource("1_gentest")
+max_waypoints = null
+seed_v = null
+safety = null
+drift = null
+flatness = null
+swing_amp = null
+swing_period = null
+start = null
+finish = null

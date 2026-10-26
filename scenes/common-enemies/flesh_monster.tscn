@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://cvgi2fv7ma12i"]
+
+[ext_resource type="Script" uid="uid://cisntvjuradr7" path="res://scenes/common-enemies/flesh_monster.gd" id="1_yvwe4"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_c5yxb"]
+radius = 32.24903
+
+[node name="FleshMonster" type="CharacterBody2D" unique_id=418952926]
+script = ExtResource("1_yvwe4")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1320213255]
+shape = SubResource("CircleShape2D_c5yxb")

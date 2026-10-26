@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://db54y36yk0gp5"]
+
+[ext_resource type="Script" uid="uid://dasikxqgkq8eb" path="res://scripts/portalstation.gd" id="1_fn2qb"]
+
+[node name="PortalStation" type="Node2D" unique_id=1421229303]
+script = ExtResource("1_fn2qb")

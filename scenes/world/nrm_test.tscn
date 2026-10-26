@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://dvv5rxjlaku04"]
+
+[ext_resource type="Script" uid="uid://dn3yura1vpai" path="res://scenes/world/nrm_test.gd" id="1_146y1"]
+
+[node name="NrmTest" type="Node2D" unique_id=1673507967]
+script = ExtResource("1_146y1")

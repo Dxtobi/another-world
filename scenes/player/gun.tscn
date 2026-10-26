@@ -1,0 +1,407 @@
+[gd_scene format=3 uid="uid://gmkph82mwydc"]
+
+[ext_resource type="Texture2D" uid="uid://bymtut5htp2pt" path="res://assets/gun/gun.png" id="1_ae5e1"]
+[ext_resource type="Script" uid="uid://dogkxbvfujcdx" path="res://scenes/player/gun.gd" id="1_j0ebl"]
+[ext_resource type="AudioStream" path="res://assets/audio/bullet_shot.wav" id="2_snd"]
+[ext_resource type="AudioStream" path="res://assets/audio/impact_flesh.wav" id="3_flesh"]
+[ext_resource type="AudioStream" path="res://assets/audio/impact_object.wav" id="4_object"]
+[ext_resource type="AudioStream" path="res://assets/audio/impact_floor.wav" id="5_floor"]
+[ext_resource type="AudioStream" path="res://assets/audio/impact_wall.wav" id="6_wall"]
+[ext_resource type="AudioStream" path="res://assets/audio/impact_water.wav" id="7_water"]
+
+[sub_resource type="Animation" id="Animation_ae5e1"]
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("gun-light-slide/slid-dot-light:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(52, -1)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("gun-light-slide/slid-dot-light:modulate")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(0, 1, 0, 1)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("bliper-main/bliper-light-holder/bliper-core-light/bliper-light:modulate")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(0.60784316, 0.83137256, 0.06666667, 1)]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("roll2:position")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(94, -104)]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("roll2:rotation")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("roll:position")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(94, -97)]
+}
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("roll:rotation")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("roll2:self_modulate")
+tracks/7/interp = 1
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(1, 1, 0, 1)]
+}
+tracks/8/type = "value"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("roll:modulate")
+tracks/8/interp = 1
+tracks/8/loop_wrap = true
+tracks/8/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(1, 1, 1, 1)]
+}
+tracks/9/type = "bezier"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("roll:position:x")
+tracks/9/interp = 1
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(239, -0.1, 0, 0.1, 0),
+"times": PackedFloat32Array(0)
+}
+tracks/10/type = "bezier"
+tracks/10/imported = false
+tracks/10/enabled = true
+tracks/10/path = NodePath("roll:position:y")
+tracks/10/interp = 1
+tracks/10/loop_wrap = true
+tracks/10/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(-97, -0.1, 0, 0.1, 0),
+"times": PackedFloat32Array(0)
+}
+
+[sub_resource type="Animation" id="Animation_j0ebl"]
+resource_name = "idle"
+loop_mode = 2
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("gun-light-slide/slid-dot-light:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.10095805, 0.101048775, 0.39999998),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector2(52, -1), Vector2(-125, -4), Vector2(-124.92264, -4), Vector2(130, -4)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("gun-light-slide/slid-dot-light:modulate")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.9666667),
+"transitions": PackedFloat32Array(0.26794323, 1),
+"update": 0,
+"values": [Color(1, 1, 1, 1), Color(0, 1, 0, 1)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("bliper-main/bliper-light-holder/bliper-core-light/bliper-light:modulate")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.96666664),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Color(0.60784316, 0.83137256, 0.06666667, 1), Color(1, 0.5294118, 0, 1)]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("roll2:position")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0.55360556),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(216.99998, 30)]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("roll2:rotation")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(),
+"transitions": PackedFloat32Array(),
+"update": 0,
+"values": []
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("roll:position")
+tracks/5/interp = 2
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0, 0.9578223),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector2(239, -97), Vector2(292, -97)]
+}
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("roll:rotation")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(0.0036776853),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("roll2:self_modulate")
+tracks/7/interp = 2
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"times": PackedFloat32Array(),
+"transitions": PackedFloat32Array(),
+"update": 0,
+"values": []
+}
+tracks/8/type = "value"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("roll:modulate")
+tracks/8/interp = 2
+tracks/8/loop_wrap = true
+tracks/8/keys = {
+"times": PackedFloat32Array(),
+"transitions": PackedFloat32Array(),
+"update": 0,
+"values": []
+}
+
+[sub_resource type="Animation" id="Animation_xf7jr"]
+resource_name = "shooting"
+length = 0.2
+loop_mode = 1
+tracks/0/type = "bezier"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("roll:position:x")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"handle_modes": PackedInt32Array(0, 2),
+"points": PackedFloat32Array(239, -0.1, 0, 0.1, 0, 189, -0.012952605, 15.833335, 0, 0),
+"times": PackedFloat32Array(0, 0.1859624)
+}
+tracks/1/type = "bezier"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("roll:position:y")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"handle_modes": PackedInt32Array(0, 2),
+"points": PackedFloat32Array(-97, -0.1, 0, 0.1, 0, -97, -0.012952605, 0, 0, 0),
+"times": PackedFloat32Array(0, 0.1859624)
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_xf7jr"]
+_data = {
+&"RESET": SubResource("Animation_ae5e1"),
+&"idle": SubResource("Animation_j0ebl"),
+&"shooting": SubResource("Animation_xf7jr")
+}
+
+[node name="gun" type="Node2D" unique_id=1741056351 node_paths=PackedStringArray("muzzle")]
+script = ExtResource("1_j0ebl")
+muzzle = NodePath("muzzle")
+spread_deg = 2.0
+recoil_distance = 80.0
+recoil_kick = 1200.0
+impact_flesh = ExtResource("3_flesh")
+impact_object = ExtResource("4_object")
+impact_floor = ExtResource("5_floor")
+impact_wall = ExtResource("6_wall")
+impact_water = ExtResource("7_water")
+
+[node name="Gun6" type="Sprite2D" parent="." unique_id=1893627148]
+position = Vector2(141, 17.75)
+scale = Vector2(1.6315789, 1.1222222)
+texture = ExtResource("1_ae5e1")
+region_enabled = true
+region_rect = Rect2(122, 535.24994, 190.49997, 45)
+
+[node name="Gun" type="Sprite2D" parent="." unique_id=1328682413]
+clip_children = 2
+position = Vector2(118, -14)
+texture = ExtResource("1_ae5e1")
+region_enabled = true
+region_rect = Rect2(35.875, 160.875, 384.75, 114.75)
+
+[node name="Gun2" type="Sprite2D" parent="Gun" unique_id=1522654157]
+modulate = Color(0.9483709, 0.10174029, 1.92523e-07, 1)
+position = Vector2(-136, -8)
+texture = ExtResource("1_ae5e1")
+region_enabled = true
+region_rect = Rect2(314, -1.1870117, 141.75, 84.375)
+
+[node name="gun-light-slide" type="Sprite2D" parent="." unique_id=1698737021]
+clip_children = 2
+position = Vector2(125, -13)
+texture = ExtResource("1_ae5e1")
+region_enabled = true
+region_rect = Rect2(513.125, 238.43799, 259.875, 23.625)
+
+[node name="slid-dot-light" type="Sprite2D" parent="gun-light-slide" unique_id=164230718]
+modulate = Color(0, 1, 0, 1)
+position = Vector2(52, -1)
+texture = ExtResource("1_ae5e1")
+region_enabled = true
+region_rect = Rect2(273.5, 349.219, 23.166656, 26.114319)
+
+[node name="roll" type="Sprite2D" parent="." unique_id=75810484]
+position = Vector2(239, -97)
+texture = ExtResource("1_ae5e1")
+offset = Vector2(0, 10)
+region_enabled = true
+region_rect = Rect2(530, 407.74997, 162, 155.99997)
+
+[node name="roll2" type="Sprite2D" parent="." unique_id=759820138]
+self_modulate = Color(1, 1, 0, 1)
+position = Vector2(94, -104)
+scale = Vector2(0.6626984, 0.6626984)
+texture = ExtResource("1_ae5e1")
+region_enabled = true
+region_rect = Rect2(656, 331.24997, 133.49988, 126)
+
+[node name="bliper-main" type="Sprite2D" parent="." unique_id=706037671]
+clip_children = 2
+position = Vector2(138, 25)
+texture = ExtResource("1_ae5e1")
+region_enabled = true
+region_rect = Rect2(567, 566.49994, 88.5, 84)
+
+[node name="bliper-light-holder" type="Sprite2D" parent="bliper-main" unique_id=6232113]
+position = Vector2(-4, 0)
+texture = ExtResource("1_ae5e1")
+region_enabled = true
+region_rect = Rect2(674.9999, 348.99997, 88.5, 84)
+
+[node name="bliper-core-light" type="Sprite2D" parent="bliper-main/bliper-light-holder" unique_id=358382934]
+position = Vector2(2, 1)
+texture = ExtResource("1_ae5e1")
+region_enabled = true
+region_rect = Rect2(556.5, 344.49997, 51.5, 52.75)
+
+[node name="bliper-light" type="Sprite2D" parent="bliper-main/bliper-light-holder/bliper-core-light" unique_id=311767829]
+modulate = Color(0.60784316, 0.83137256, 0.06666667, 1)
+position = Vector2(2, 1)
+texture = ExtResource("1_ae5e1")
+region_enabled = true
+region_rect = Rect2(588, 450.99997, 51.5, 52.75)
+
+[node name="anchoor" type="Marker2D" parent="bliper-main" unique_id=2089926721]
+position = Vector2(0, 5)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1065050917]
+libraries/ = SubResource("AnimationLibrary_xf7jr")
+autoplay = &"idle"
+
+[node name="right-hand" type="Marker2D" parent="." unique_id=1234476107]
+position = Vector2(0, 1)
+
+[node name="left-hand2" type="Marker2D" parent="." unique_id=553308315]
+position = Vector2(103, 30)
+
+[node name="muzzle" type="Marker2D" parent="." unique_id=1547057998]
+position = Vector2(300, -19)
+
+[node name="MuzzleFlash" type="Polygon2D" parent="muzzle" unique_id=771204401]
+visible = false
+position = Vector2(10, 0)
+color = Color(1, 0.82, 0.3, 1)
+polygon = PackedVector2Array(38, 0, 7, -5, 11, -20, 2, -6, -9, -11, -4, -2, -14, 0, -4, 2, -9, 11, 2, 6, 11, 20, 7, 5)
+
+[node name="MuzzleFlashCore" type="Polygon2D" parent="muzzle/MuzzleFlash" unique_id=771204402]
+polygon = PackedVector2Array(18, 0, 3, -2.5, 5, -9, 1, -3, -4, -5, -2, -1, -6, 0, -2, 1, -4, 5, 1, 3, 5, 9, 3, 2.5)
+
+[node name="ShotSound" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("2_snd")
+volume_db = -3.0
+max_polyphony = 4
+

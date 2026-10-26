@@ -1,0 +1,325 @@
+[gd_scene format=3 uid="uid://c3xdrl2bcj34"]
+
+[ext_resource type="Script" uid="uid://bnso0mph1tb11" path="res://addons/soupik/modifications/soup_two_bone_ik.gd" id="1_gug5m"]
+[ext_resource type="Texture2D" uid="uid://br04cbafm3wfv" path="res://sprites/lizard-small/lizard_path113.png" id="1_igd5h"]
+[ext_resource type="Script" uid="uid://c20kgrku2joaj" path="res://addons/soupik/modifications/soup_bone.gd" id="1_nc7a5"]
+[ext_resource type="Script" uid="uid://b5uiivwxcoics" path="res://addons/soupik/modifications/soup_bone_control.gd" id="2_gfm45"]
+[ext_resource type="Texture2D" uid="uid://b5qoltklkcnmf" path="res://sprites/lizard-small/lizard_path110.png" id="2_nc7a5"]
+[ext_resource type="Script" uid="uid://cpqcq7meh305c" path="res://addons/soupik/modifications/soup_fabrik.gd" id="3_6ivao"]
+[ext_resource type="Texture2D" uid="uid://drtvfrh0b4lhu" path="res://sprites/lizard-small/lizard_path114.png" id="3_pn04v"]
+[ext_resource type="Texture2D" uid="uid://ia7jpmsiljd5" path="res://sprites/lizard-small/lizard_path111.png" id="4_u1dk3"]
+[ext_resource type="Texture2D" uid="uid://bklgsgt2ibrp4" path="res://sprites/lizard-small/lizard_path112.png" id="5_gug5m"]
+[ext_resource type="Texture2D" uid="uid://chedvul4adtrs" path="res://sprites/lizard-small/lizard_path208.png" id="6_gfm45"]
+[ext_resource type="Texture2D" uid="uid://dh4e6nhbtaasd" path="res://sprites/lizard-small/lizard_path209.png" id="7_6ivao"]
+[ext_resource type="Texture2D" uid="uid://bopbrfqj8dmh4" path="res://sprites/lizard-small/lizard_path212.png" id="8_x2sxt"]
+[ext_resource type="Texture2D" uid="uid://b4qlmesfm5yxq" path="res://sprites/lizard-small/lizard_path124.png" id="9_ny7jp"]
+[ext_resource type="Texture2D" uid="uid://b5cuwdxv8upl6" path="res://sprites/lizard-small/lizard_path202.png" id="10_a0hr2"]
+[ext_resource type="Texture2D" uid="uid://8jwm1a4d1es" path="res://sprites/lizard-small/lizard_path204.png" id="11_eskgk"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_puuf6"]
+radius = 19.0
+
+[node name="lizar-small" type="CharacterBody2D" unique_id=454178708]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=215539279]
+position = Vector2(-3, -4)
+shape = SubResource("CircleShape2D_puuf6")
+
+[node name="body" type="Node2D" parent="." unique_id=410353977]
+modulate = Color(0, 0.83137256, 0.7921569, 1)
+
+[node name="Skeleton2D" type="Skeleton2D" parent="body" unique_id=1712906895]
+
+[node name="sec-_bone" type="Bone2D" parent="body/Skeleton2D" unique_id=822265588]
+z_index = 1
+position = Vector2(21, 4)
+rotation = 0.031239834
+rest = Transform2D(1, 0, 0, 1, 21, 4)
+auto_calculate_length_and_angle = false
+length = 30.0
+bone_angle = 0.0
+script = ExtResource("1_nc7a5")
+transform_mode = 0
+target_rotation = 0.031239834
+target_position = Vector2(21, 4)
+
+[node name="sec-" type="Sprite2D" parent="body/Skeleton2D/sec-_bone" unique_id=1340767057]
+texture = ExtResource("2_nc7a5")
+offset = Vector2(11, 0)
+
+[node name="sprites_bone" type="Bone2D" parent="body/Skeleton2D" unique_id=1838268507]
+rest = Transform2D(1, 0, 0, 1, 0, 0)
+script = ExtResource("1_nc7a5")
+transform_mode = 0
+
+[node name="sec-2_bone" type="Bone2D" parent="body/Skeleton2D/sprites_bone" unique_id=37674362]
+rest = Transform2D(1, 0, 0, 1, 0, 0)
+script = ExtResource("1_nc7a5")
+transform_mode = 0
+
+[node name="sec-3_bone" type="Bone2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone" unique_id=1535200901]
+position = Vector2(-5, -4)
+rest = Transform2D(1, 0, 0, 1, -5, -4)
+script = ExtResource("1_nc7a5")
+transform_mode = 0
+target_position = Vector2(-5, -4)
+
+[node name="sec-4_bone" type="Bone2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone" unique_id=1621580333]
+position = Vector2(-13, 3)
+rest = Transform2D(1, 0, 0, 1, -13, 3)
+script = ExtResource("1_nc7a5")
+transform_mode = 0
+target_position = Vector2(-13, 3)
+
+[node name="sec-5_bone" type="Bone2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone" unique_id=689694672]
+position = Vector2(-19, 3)
+rest = Transform2D(1, 0, 0, 1, -19, 3)
+script = ExtResource("1_nc7a5")
+transform_mode = 0
+target_position = Vector2(-19, 3)
+
+[node name="upper-back-leg_bone" type="Bone2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone/sec-5_bone" unique_id=632272632]
+z_index = 1
+position = Vector2(-1, -15)
+rest = Transform2D(1, 0, 0, 1, -1, -15)
+script = ExtResource("1_nc7a5")
+transform_mode = 0
+target_position = Vector2(-1, -15)
+
+[node name="second-upper-back-leg_bone" type="Bone2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone/sec-5_bone/upper-back-leg_bone" unique_id=63975894]
+position = Vector2(16, 15)
+rest = Transform2D(1, 0, 0, 1, 16, 15)
+script = ExtResource("1_nc7a5")
+transform_mode = 0
+target_position = Vector2(16, 15)
+
+[node name="last-ack-leg_bone" type="Bone2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone/sec-5_bone/upper-back-leg_bone/second-upper-back-leg_bone" unique_id=364352912]
+position = Vector2(-18, 1.1920929e-07)
+rest = Transform2D(1, 0, 0, 1, -18, 0)
+auto_calculate_length_and_angle = false
+length = 20.381
+bone_angle = 68.43598
+script = ExtResource("1_nc7a5")
+transform_mode = 0
+target_position = Vector2(-18, 0)
+
+[node name="last-ack-leg" type="Sprite2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone/sec-5_bone/upper-back-leg_bone/second-upper-back-leg_bone/last-ack-leg_bone" unique_id=158410681]
+texture = ExtResource("8_x2sxt")
+offset = Vector2(4, 8)
+
+[node name="second-upper-back-leg" type="Sprite2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone/sec-5_bone/upper-back-leg_bone/second-upper-back-leg_bone" unique_id=1617489892]
+texture = ExtResource("7_6ivao")
+offset = Vector2(-13, 0)
+
+[node name="upper-back-leg" type="Sprite2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone/sec-5_bone/upper-back-leg_bone" unique_id=649453746]
+texture = ExtResource("6_gfm45")
+offset = Vector2(6, 6)
+
+[node name="sec-6_bone" type="Bone2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone/sec-5_bone" unique_id=153054637]
+position = Vector2(-32, 3)
+rest = Transform2D(1, 0, 0, 1, -32, 3)
+auto_calculate_length_and_angle = false
+length = 11.132
+bone_angle = 181.07797
+script = ExtResource("1_nc7a5")
+transform_mode = 0
+target_position = Vector2(-32, 3)
+
+[node name="sec-6" type="Sprite2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone/sec-5_bone/sec-6_bone" unique_id=1748122154]
+texture = ExtResource("9_ny7jp")
+
+[node name="upper-back-leg2_bone" type="Bone2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone/sec-5_bone" unique_id=1926838046]
+position = Vector2(-1, -15)
+rest = Transform2D(1, 0, 0, 1, -1, -15)
+script = ExtResource("1_nc7a5")
+transform_mode = 0
+target_position = Vector2(-1, -15)
+
+[node name="second-upper-back-leg_bone" type="Bone2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone/sec-5_bone/upper-back-leg2_bone" unique_id=1036085778]
+position = Vector2(16, 15)
+rest = Transform2D(1, 0, 0, 1, 16, 15)
+script = ExtResource("1_nc7a5")
+transform_mode = 0
+target_position = Vector2(16, 15)
+
+[node name="last-ack-leg_bone" type="Bone2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone/sec-5_bone/upper-back-leg2_bone/second-upper-back-leg_bone" unique_id=1609397454]
+position = Vector2(-18, 1.1920929e-07)
+rest = Transform2D(1, 0, 0, 1, -18, 0)
+auto_calculate_length_and_angle = false
+length = 20.0
+bone_angle = 68.98199
+script = ExtResource("1_nc7a5")
+transform_mode = 0
+target_position = Vector2(-18, 0)
+
+[node name="last-ack-leg" type="Sprite2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone/sec-5_bone/upper-back-leg2_bone/second-upper-back-leg_bone/last-ack-leg_bone" unique_id=251486832]
+texture = ExtResource("8_x2sxt")
+offset = Vector2(4, 8)
+
+[node name="second-upper-back-leg" type="Sprite2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone/sec-5_bone/upper-back-leg2_bone/second-upper-back-leg_bone" unique_id=688894605]
+texture = ExtResource("7_6ivao")
+offset = Vector2(-13, 0)
+
+[node name="upper-back-leg2" type="Sprite2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone/sec-5_bone/upper-back-leg2_bone" unique_id=1240742817]
+texture = ExtResource("6_gfm45")
+offset = Vector2(6, 6)
+
+[node name="sec-5" type="Sprite2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone/sec-5_bone" unique_id=568108107]
+texture = ExtResource("5_gug5m")
+offset = Vector2(-12, -1)
+
+[node name="sec-4" type="Sprite2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone" unique_id=353259444]
+texture = ExtResource("4_u1dk3")
+offset = Vector2(-8, 0)
+
+[node name="upper-front2_bone" type="Bone2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone" unique_id=214603777]
+position = Vector2(20, 12)
+rotation = 0.32900786
+rest = Transform2D(1, 0, 0, 1, 20, 12)
+script = ExtResource("1_nc7a5")
+transform_mode = 0
+target_rotation = 0.32900786
+target_position = Vector2(20, 12)
+
+[node name="lower-front_bone" type="Bone2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/upper-front2_bone" unique_id=1080999330]
+position = Vector2(-20, -11)
+rotation = -0.20354426
+rest = Transform2D(1, 0, 0, 1, -20, -11)
+auto_calculate_length_and_angle = false
+length = 23.875
+bone_angle = 81.916
+script = ExtResource("1_nc7a5")
+transform_mode = 0
+target_rotation = -0.20354426
+target_position = Vector2(-20, -11)
+
+[node name="lower-front" type="Sprite2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/upper-front2_bone/lower-front_bone" unique_id=1528687371]
+texture = ExtResource("11_eskgk")
+offset = Vector2(3, 9)
+
+[node name="upper-front2" type="Sprite2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/upper-front2_bone" unique_id=688333567]
+texture = ExtResource("10_a0hr2")
+offset = Vector2(-10, -7)
+
+[node name="upper-front_bone" type="Bone2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone" unique_id=555353397]
+z_index = 1
+position = Vector2(20, 12)
+rotation = 0.10864152
+scale = Vector2(0.9999999, 0.9999999)
+rest = Transform2D(1, 0, 0, 1, 20, 12)
+script = ExtResource("1_nc7a5")
+transform_mode = 0
+target_rotation = 0.10864152
+target_position = Vector2(20, 12)
+
+[node name="lower-front_bone" type="Bone2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/upper-front_bone" unique_id=1472947140]
+position = Vector2(-20, -11)
+rotation = 0.0026213974
+scale = Vector2(0.9999997, 0.9999997)
+rest = Transform2D(1, 0, 0, 1, -20, -11)
+auto_calculate_length_and_angle = false
+length = 23.114
+bone_angle = 81.916
+script = ExtResource("1_nc7a5")
+transform_mode = 0
+target_rotation = 0.0026213974
+target_position = Vector2(-20, -11)
+
+[node name="lower-front" type="Sprite2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/upper-front_bone/lower-front_bone" unique_id=1570143481]
+texture = ExtResource("11_eskgk")
+offset = Vector2(3, 9)
+
+[node name="upper-front" type="Sprite2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/upper-front_bone" unique_id=1492682731]
+texture = ExtResource("10_a0hr2")
+offset = Vector2(-10, -7)
+
+[node name="sec-3" type="Sprite2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone" unique_id=42640907]
+texture = ExtResource("3_pn04v")
+
+[node name="sec-2" type="Sprite2D" parent="body/Skeleton2D/sprites_bone/sec-2_bone" unique_id=1675028201]
+texture = ExtResource("1_igd5h")
+offset = Vector2(7, 0)
+
+[node name="Rig" type="Node2D" parent="body" unique_id=1840314414]
+
+[node name="head" type="Node2D" parent="body/Rig" unique_id=209812267 node_paths=PackedStringArray("target_node", "joint_one_bone_node", "joint_two_bone_node")]
+position = Vector2(18, 10)
+script = ExtResource("1_gug5m")
+flip_bend_direction = true
+target_node = NodePath("../head2")
+joint_one_bone_node = NodePath("../../Skeleton2D/sec-_bone")
+joint_two_bone_node = NodePath("../../Skeleton2D/sec-_bone")
+metadata/_custom_type_script = "uid://bnso0mph1tb11"
+
+[node name="tail" type="Marker2D" parent="body/Rig" unique_id=487690546]
+position = Vector2(-69, 5)
+
+[node name="backleg_ankle-left-leg" type="Marker2D" parent="body/Rig" unique_id=64334217]
+position = Vector2(-40, 2)
+
+[node name="left-leg" type="RayCast2D" parent="body/Rig/backleg_ankle-left-leg" unique_id=1645655644]
+target_position = Vector2(8, 19)
+
+[node name="backleg_ankle-1" type="Marker2D" parent="body/Rig" unique_id=1743650994]
+position = Vector2(-40, 2)
+
+[node name="right-leg" type="RayCast2D" parent="body/Rig/backleg_ankle-1" unique_id=524451611]
+target_position = Vector2(8, 18)
+
+[node name="head2" type="Marker2D" parent="body/Rig" unique_id=317697112]
+position = Vector2(53, 5)
+
+[node name="front-leg-1" type="Marker2D" parent="body/Rig" unique_id=966417015]
+position = Vector2(-3, 18)
+
+[node name="front-leg-0" type="Marker2D" parent="body/Rig" unique_id=1130719783]
+position = Vector2(0, 15)
+
+[node name="backleg-left" type="Node2D" parent="body/Rig" unique_id=440158471 node_paths=PackedStringArray("target_node", "joint_one_bone_node", "joint_two_bone_node")]
+script = ExtResource("1_gug5m")
+flip_bend_direction = true
+target_node = NodePath("../backleg_ankle-left-leg")
+joint_one_bone_node = NodePath("../../Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone/sec-5_bone/upper-back-leg_bone")
+joint_two_bone_node = NodePath("../../Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone/sec-5_bone/upper-back-leg_bone/second-upper-back-leg_bone")
+metadata/_custom_type_script = "uid://bnso0mph1tb11"
+
+[node name="backleg-soup-1" type="Node2D" parent="body/Rig" unique_id=66001622 node_paths=PackedStringArray("target_node", "joint_one_bone_node", "joint_two_bone_node")]
+script = ExtResource("1_gug5m")
+flip_bend_direction = true
+target_node = NodePath("../backleg_ankle-1")
+joint_one_bone_node = NodePath("../../Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone/sec-5_bone/upper-back-leg2_bone")
+joint_two_bone_node = NodePath("../../Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone/sec-5_bone/upper-back-leg2_bone/second-upper-back-leg_bone")
+metadata/_custom_type_script = "uid://bnso0mph1tb11"
+
+[node name="backleg-soup-1-1" type="Node2D" parent="body/Rig" unique_id=311359295 node_paths=PackedStringArray("bone_node", "target_node")]
+script = ExtResource("2_gfm45")
+control_rotation = true
+bone_node = NodePath("../../Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone/sec-5_bone/upper-back-leg2_bone/second-upper-back-leg_bone/last-ack-leg_bone")
+target_node = NodePath("../backleg_ankle-1")
+metadata/_custom_type_script = "uid://b5uiivwxcoics"
+
+[node name="backleg-left2" type="Node2D" parent="body/Rig" unique_id=1433193132 node_paths=PackedStringArray("bone_node", "target_node")]
+script = ExtResource("2_gfm45")
+control_rotation = true
+bone_node = NodePath("../../Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/sec-4_bone/sec-5_bone/upper-back-leg_bone/second-upper-back-leg_bone/last-ack-leg_bone")
+target_node = NodePath("../backleg_ankle-left-leg")
+metadata/_custom_type_script = "uid://b5uiivwxcoics"
+
+[node name="SoupFABRIK" type="Node2D" parent="body/Rig" unique_id=733591736 node_paths=PackedStringArray("target_node")]
+script = ExtResource("3_6ivao")
+target_node = NodePath("../tail")
+metadata/_custom_type_script = "uid://cpqcq7meh305c"
+
+[node name="front-leg-1-soup" type="Node2D" parent="body/Rig" unique_id=2127399046 node_paths=PackedStringArray("target_node", "joint_one_bone_node", "joint_two_bone_node")]
+script = ExtResource("1_gug5m")
+target_node = NodePath("../front-leg-1")
+joint_one_bone_node = NodePath("../../Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/upper-front_bone")
+joint_two_bone_node = NodePath("../../Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/upper-front_bone/lower-front_bone")
+metadata/_custom_type_script = "uid://bnso0mph1tb11"
+
+[node name="front-leg-0-soup" type="Node2D" parent="body/Rig" unique_id=500315641 node_paths=PackedStringArray("target_node", "joint_one_bone_node", "joint_two_bone_node")]
+script = ExtResource("1_gug5m")
+target_node = NodePath("../front-leg-0")
+joint_one_bone_node = NodePath("../../Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/upper-front2_bone")
+joint_two_bone_node = NodePath("../../Skeleton2D/sprites_bone/sec-2_bone/sec-3_bone/upper-front2_bone/lower-front_bone")
+metadata/_custom_type_script = "uid://bnso0mph1tb11"

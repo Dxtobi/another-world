@@ -1,0 +1,424 @@
+[gd_scene format=3 uid="uid://b5i20rd7iu4re"]
+
+[ext_resource type="Material" uid="uid://dlfasbrxg8w5s" path="res://world/atmosphere_sky_material.tres" id="1_niox5"]
+[ext_resource type="Texture2D" uid="uid://bymtut5htp2pt" path="res://assets/gun/gun.png" id="1_t4wbk"]
+[ext_resource type="Script" uid="uid://dkm6spaa8oxnx" path="res://world/platform.gd" id="2_ixuv2"]
+[ext_resource type="PackedScene" uid="uid://csp300ymcxjb0" path="res://scenes/player/player.tscn" id="2_j1f80"]
+[ext_resource type="Shader" uid="uid://b7j20w1mg0b7x" path="res://world/platform_surface.gdshader" id="3_f7wja"]
+[ext_resource type="PackedScene" uid="uid://db54y36yk0gp5" path="res://scenes/game-mechs/portal_station.tscn" id="5_h7iep"]
+[ext_resource type="Script" uid="uid://brqgkd2o6spfh" path="res://scenes/world/beast_cam.gd" id="5_niox5"]
+[ext_resource type="Shader" uid="uid://bkxpayvilknm6" path="res://world/platform_water.gdshader" id="9_juhy5"]
+[ext_resource type="Script" uid="uid://c55igk7xfnvit" path="res://world/water_volume.gd" id="10_3g5ya"]
+[ext_resource type="Texture2D" uid="uid://pfdgs7mpl8k4" path="res://assets/enverinment/batch_g2193_env.png" id="12_ejjxq"]
+[ext_resource type="Script" uid="uid://bg8rmoc3ga15b" path="res://world/projectile_layer.gd" id="13_proj"]
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_puuf6"]
+
+[sub_resource type="Image" id="Image_bn4wg"]
+data = {
+"data": PackedByteArray(0, 160, 170, 196, 0, 0, 64, 192, 0, 0, 0, 0, 0, 0, 128, 63, 0, 0, 72, 67, 0, 0, 27, 195, 0, 0, 0, 0, 0, 0, 128, 63, 0, 0, 242, 67, 0, 0, 224, 193, 0, 0, 0, 0, 0, 0, 128, 63, 0, 0, 48, 68, 0, 0, 232, 66, 0, 0, 0, 0, 0, 0, 128, 63, 0, 64, 53, 69, 0, 0, 160, 64, 0, 0, 0, 0, 0, 0, 128, 63, 0, 112, 63, 69, 0, 224, 140, 196, 0, 0, 0, 0, 0, 0, 128, 63, 0, 16, 71, 69, 0, 192, 100, 196, 0, 0, 0, 0, 0, 0, 128, 63, 0, 32, 65, 69, 0, 0, 194, 194, 0, 0, 0, 0, 0, 0, 128, 63, 0, 144, 144, 69, 0, 0, 22, 195, 0, 0, 0, 0, 0, 0, 128, 63, 0, 96, 148, 69, 0, 64, 163, 196, 0, 0, 0, 0, 0, 0, 128, 63, 0, 184, 153, 69, 0, 32, 156, 196, 0, 0, 0, 0, 0, 0, 128, 63, 0, 16, 159, 69, 0, 0, 138, 194, 0, 0, 0, 0, 0, 0, 128, 63, 0, 88, 219, 69, 0, 0, 160, 193, 0, 0, 0, 0, 0, 0, 128, 63, 0, 196, 7, 70, 0, 0, 232, 194, 0, 0, 0, 0, 0, 0, 128, 63, 0, 120, 13, 70, 0, 0, 21, 196, 0, 0, 0, 0, 0, 0, 128, 63, 0, 88, 222, 69, 0, 16, 22, 197, 0, 0, 0, 0, 0, 0, 128, 63, 0, 40, 200, 69, 0, 16, 4, 197, 0, 0, 0, 0, 0, 0, 128, 63, 0, 240, 189, 69, 0, 64, 11, 197, 0, 0, 0, 0, 0, 0, 128, 63, 0, 192, 224, 69, 0, 112, 42, 197, 0, 0, 0, 0, 0, 0, 128, 63, 0, 104, 28, 70, 0, 0, 58, 195, 0, 0, 0, 0, 0, 0, 128, 63, 0, 40, 34, 70, 0, 0, 153, 67, 0, 0, 0, 0, 0, 0, 128, 63, 0, 192, 135, 196, 0, 0, 147, 67, 0, 0, 0, 0, 0, 0, 128, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+"format": "RGBAFloat",
+"height": 1,
+"mipmaps": false,
+"width": 128
+}
+
+[sub_resource type="ImageTexture" id="ImageTexture_xq4vf"]
+image = SubResource("Image_bn4wg")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ejjxq"]
+shader = ExtResource("3_f7wja")
+shader_parameter/tint = Color(1, 1, 1, 1)
+shader_parameter/col_mass = Color(0.12156863, 0.11372549, 0.11764706, 1)
+shader_parameter/col_band = Color(0.15686275, 0.14117648, 0.13725491, 1)
+shader_parameter/col_accent = Color(0.27058825, 0.2509804, 0.23529412, 1)
+shader_parameter/col_rim = Color(0.60784316, 0.6313726, 0.5529412, 1)
+shader_parameter/col_haze = Color(0.101960786, 0.16470589, 0.19215687, 1)
+shader_parameter/col_fog = Color(0.6, 0.7, 0.66, 1)
+shader_parameter/col_moss = Color(0.22, 0.34, 0.12, 1)
+shader_parameter/col_moss_lit = Color(0.62, 0.78, 0.26, 1)
+shader_parameter/col_glow = Color(0.25, 0.85, 0.95, 1)
+shader_parameter/rim_strength = 0.6
+shader_parameter/rim_width = 7.0
+shader_parameter/value_bands = 3.0
+shader_parameter/detail_scale = 19.571666666666665
+shader_parameter/haze_amount = 0.26
+shader_parameter/mist_band = 170.0
+shader_parameter/depth_rank = 0.0
+shader_parameter/focus_near = 600.0
+shader_parameter/focus_far = 1800.0
+shader_parameter/feather = 3.0
+shader_parameter/grain_amount = 0.24
+shader_parameter/mottle_amount = 0.0
+shader_parameter/crack_amount = 0.65
+shader_parameter/dune_amount = 0.0
+shader_parameter/snow_amount = 0.0
+shader_parameter/alpha_body = 1.0
+shader_parameter/facet_amount = 0.0
+shader_parameter/strata_amount = 0.0
+shader_parameter/pit_amount = 0.0
+shader_parameter/edge_wobble = 0.0
+shader_parameter/backlight_amount = 0.0
+shader_parameter/brush_amount = 0.0
+shader_parameter/moss_amount = 0.0
+shader_parameter/moss_depth = 22.0
+shader_parameter/fleck_amount = 0.0
+shader_parameter/water_amount = 0.0
+shader_parameter/water_opacity = 0.82
+shader_parameter/col_water_shallow = Color(0.28, 0.66, 0.68, 1)
+shader_parameter/col_water_deep = Color(0.03, 0.14, 0.2, 1)
+shader_parameter/water_depth = 140.0
+shader_parameter/reflect_amount = 0.85
+shader_parameter/reflect_fade = 260.0
+shader_parameter/reflect_distort = 5.0
+shader_parameter/reflect_tint = Color(0.8, 0.93, 1, 1)
+shader_parameter/reflect_floor = 0.55
+shader_parameter/reflect_squash = 0.0
+shader_parameter/reflect_blur = 1.2
+shader_parameter/reflect_blur_grow = 0.05
+shader_parameter/reflect_blur_max = 12.0
+shader_parameter/reflect_sky = Color(0.1, 0.2, 0.22, 1)
+shader_parameter/reflect_absorb = 0.25
+shader_parameter/water_solid = 0.85
+shader_parameter/underwater_amount = 0.0
+shader_parameter/underwater_max_depth = 1800.0
+shader_parameter/refract_amount = 0.0
+shader_parameter/refract_distort = 4.0
+shader_parameter/refract_depth = 120.0
+shader_parameter/refract_absorb = 0.55
+shader_parameter/refract_tint = Color(0.72, 0.9, 0.86, 1)
+shader_parameter/streak_amount = 0.7
+shader_parameter/glint_amount = 0.0
+shader_parameter/glint_x = 0.5
+shader_parameter/glint_width = 0.06
+shader_parameter/surface_sheen = 0.8
+shader_parameter/shore_wave_amp = 0.0
+shader_parameter/shore_wave_len = 1400.0
+shader_parameter/surface_wave_amount = 1.0
+shader_parameter/surface_wave_height = 10.0
+shader_parameter/surface_wave_speed = 150.0
+shader_parameter/surface_wave_len = 70.0
+shader_parameter/surface_wave_decay = 260.0
+shader_parameter/surface_wave_life = 2.2
+shader_parameter/surface_swell = 1.4
+shader_parameter/surface_baseline = 6.0
+shader_parameter/surface_wave_zoom = 1.0
+shader_parameter/wave_count = 0.0
+shader_parameter/pt_count = 22.0
+shader_parameter/pts_tex = SubResource("ImageTexture_xq4vf")
+shader_parameter/winding = 1.0
+
+[sub_resource type="Image" id="Image_qmhu0"]
+data = {
+"data": PackedByteArray(0, 24, 18, 198, 0, 0, 28, 195, 0, 0, 0, 0, 0, 0, 128, 63, 0, 0, 72, 67, 0, 0, 28, 195, 0, 0, 0, 0, 0, 0, 128, 63, 0, 0, 242, 67, 0, 0, 232, 193, 0, 0, 0, 0, 0, 0, 128, 63, 0, 0, 48, 68, 0, 0, 230, 66, 0, 0, 0, 0, 0, 0, 128, 63, 0, 224, 187, 68, 0, 0, 106, 67, 0, 0, 0, 0, 0, 0, 128, 63, 0, 128, 13, 69, 0, 0, 2, 67, 0, 0, 0, 0, 0, 0, 128, 63, 0, 128, 34, 69, 0, 0, 28, 195, 0, 0, 0, 0, 0, 0, 128, 63, 0, 32, 65, 69, 0, 0, 196, 194, 0, 0, 0, 0, 0, 0, 128, 63, 0, 180, 7, 70, 0, 0, 242, 194, 0, 0, 0, 0, 0, 0, 128, 63, 0, 204, 12, 70, 0, 0, 81, 195, 0, 0, 0, 0, 0, 0, 128, 63, 0, 104, 28, 70, 0, 0, 59, 195, 0, 0, 0, 0, 0, 0, 128, 63, 0, 24, 77, 70, 0, 0, 238, 67, 0, 0, 0, 0, 0, 0, 128, 63, 0, 192, 20, 198, 0, 0, 211, 67, 0, 0, 0, 0, 0, 0, 128, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+"format": "RGBAFloat",
+"height": 1,
+"mipmaps": false,
+"width": 128
+}
+
+[sub_resource type="ImageTexture" id="ImageTexture_2sypn"]
+image = SubResource("Image_qmhu0")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ha6ax"]
+shader = ExtResource("3_f7wja")
+shader_parameter/tint = Color(1, 1, 1, 1)
+shader_parameter/col_mass = Color(0.08235294, 0.10980392, 0.09019608, 1)
+shader_parameter/col_band = Color(0.11764706, 0.16470589, 0.1254902, 1)
+shader_parameter/col_accent = Color(0.19215687, 0.3137255, 0.18039216, 1)
+shader_parameter/col_rim = Color(0.7254902, 0.8627451, 0.8235294, 1)
+shader_parameter/col_haze = Color(0.101960786, 0.16470589, 0.19215687, 1)
+shader_parameter/col_fog = Color(0.6, 0.7, 0.66, 1)
+shader_parameter/col_moss = Color(0.22, 0.34, 0.12, 1)
+shader_parameter/col_moss_lit = Color(0.62, 0.78, 0.26, 1)
+shader_parameter/col_glow = Color(0.25, 0.85, 0.95, 1)
+shader_parameter/rim_strength = 0.5
+shader_parameter/rim_width = 3.5
+shader_parameter/value_bands = 3.0
+shader_parameter/detail_scale = 32.0
+shader_parameter/haze_amount = 0.24
+shader_parameter/mist_band = 102.75
+shader_parameter/depth_rank = 0.0
+shader_parameter/focus_near = 600.0
+shader_parameter/focus_far = 1800.0
+shader_parameter/feather = 3.0
+shader_parameter/grain_amount = 0.3
+shader_parameter/mottle_amount = 0.85
+shader_parameter/crack_amount = 0.12
+shader_parameter/dune_amount = 0.0
+shader_parameter/snow_amount = 0.0
+shader_parameter/alpha_body = 1.0
+shader_parameter/facet_amount = 0.0
+shader_parameter/strata_amount = 0.0
+shader_parameter/pit_amount = 0.0
+shader_parameter/edge_wobble = 0.0
+shader_parameter/backlight_amount = 0.0
+shader_parameter/brush_amount = 0.0
+shader_parameter/moss_amount = 0.0
+shader_parameter/moss_depth = 22.0
+shader_parameter/fleck_amount = 0.0
+shader_parameter/water_amount = 0.0
+shader_parameter/water_opacity = 0.82
+shader_parameter/col_water_shallow = Color(0.28, 0.66, 0.68, 1)
+shader_parameter/col_water_deep = Color(0.03, 0.14, 0.2, 1)
+shader_parameter/water_depth = 140.0
+shader_parameter/reflect_amount = 0.85
+shader_parameter/reflect_fade = 260.0
+shader_parameter/reflect_distort = 5.0
+shader_parameter/reflect_tint = Color(0.8, 0.93, 1, 1)
+shader_parameter/reflect_floor = 0.55
+shader_parameter/reflect_squash = 0.0
+shader_parameter/reflect_blur = 1.2
+shader_parameter/reflect_blur_grow = 0.05
+shader_parameter/reflect_blur_max = 12.0
+shader_parameter/reflect_sky = Color(0.1, 0.2, 0.22, 1)
+shader_parameter/reflect_absorb = 0.25
+shader_parameter/water_solid = 0.85
+shader_parameter/underwater_amount = 0.0
+shader_parameter/underwater_max_depth = 1800.0
+shader_parameter/refract_amount = 0.0
+shader_parameter/refract_distort = 4.0
+shader_parameter/refract_depth = 120.0
+shader_parameter/refract_absorb = 0.55
+shader_parameter/refract_tint = Color(0.72, 0.9, 0.86, 1)
+shader_parameter/streak_amount = 0.7
+shader_parameter/glint_amount = 0.0
+shader_parameter/glint_x = 0.5
+shader_parameter/glint_width = 0.06
+shader_parameter/surface_sheen = 0.8
+shader_parameter/shore_wave_amp = 0.0
+shader_parameter/shore_wave_len = 1400.0
+shader_parameter/surface_wave_amount = 1.0
+shader_parameter/surface_wave_height = 10.0
+shader_parameter/surface_wave_speed = 150.0
+shader_parameter/surface_wave_len = 70.0
+shader_parameter/surface_wave_decay = 260.0
+shader_parameter/surface_wave_life = 2.2
+shader_parameter/surface_swell = 1.4
+shader_parameter/surface_baseline = 6.0
+shader_parameter/surface_wave_zoom = 1.0
+shader_parameter/wave_count = 0.0
+shader_parameter/pt_count = 13.0
+shader_parameter/pts_tex = SubResource("ImageTexture_2sypn")
+shader_parameter/winding = 1.0
+
+[sub_resource type="Image" id="Image_a2n7y"]
+data = {
+"data": PackedByteArray(0, 0, 25, 198, 0, 0, 138, 194, 0, 0, 0, 0, 0, 0, 128, 63, 0, 188, 87, 70, 0, 0, 138, 194, 0, 0, 0, 0, 0, 0, 128, 63, 0, 188, 87, 70, 0, 128, 55, 68, 0, 0, 0, 0, 0, 0, 128, 63, 0, 16, 26, 198, 0, 128, 38, 68, 0, 0, 0, 0, 0, 0, 128, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+"format": "RGBAFloat",
+"height": 1,
+"mipmaps": false,
+"width": 128
+}
+
+[sub_resource type="ImageTexture" id="ImageTexture_1n3re"]
+image = SubResource("Image_a2n7y")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_jxbhy"]
+shader = ExtResource("9_juhy5")
+shader_parameter/tint = Color(1, 1, 1, 1)
+shader_parameter/col_mass = Color(0.043137256, 0.078431375, 0.07450981, 1)
+shader_parameter/col_band = Color(0.07058824, 0.14117648, 0.12156863, 1)
+shader_parameter/col_accent = Color(0.11764706, 0.23921569, 0.2, 1)
+shader_parameter/col_rim = Color(0.34117648, 0.627451, 0.54901963, 1)
+shader_parameter/col_haze = Color(0.101960786, 0.16470589, 0.19215687, 1)
+shader_parameter/col_fog = Color(0.6, 0.7, 0.66, 1)
+shader_parameter/col_moss = Color(0.22, 0.34, 0.12, 1)
+shader_parameter/col_moss_lit = Color(0.62, 0.78, 0.26, 1)
+shader_parameter/col_glow = Color(0.25, 0.85, 0.95, 1)
+shader_parameter/rim_strength = 0.65
+shader_parameter/rim_width = 10.0
+shader_parameter/value_bands = 3.0
+shader_parameter/detail_scale = 32.0
+shader_parameter/haze_amount = 0.3
+shader_parameter/mist_band = 120.44999999999999
+shader_parameter/depth_rank = 0.0
+shader_parameter/focus_near = 600.0
+shader_parameter/focus_far = 1800.0
+shader_parameter/feather = 3.0
+shader_parameter/grain_amount = 0.08
+shader_parameter/mottle_amount = 0.3
+shader_parameter/crack_amount = 0.0
+shader_parameter/dune_amount = 0.0
+shader_parameter/snow_amount = 0.0
+shader_parameter/alpha_body = 1.0
+shader_parameter/facet_amount = 0.0
+shader_parameter/strata_amount = 0.0
+shader_parameter/pit_amount = 0.0
+shader_parameter/edge_wobble = 0.0
+shader_parameter/backlight_amount = 0.0
+shader_parameter/brush_amount = 0.0
+shader_parameter/moss_amount = 0.0
+shader_parameter/moss_depth = 22.0
+shader_parameter/fleck_amount = 0.0
+shader_parameter/water_amount = 0.9
+shader_parameter/water_opacity = 0.82
+shader_parameter/col_water_shallow = Color(0.16470589, 0.41960785, 0.4, 1)
+shader_parameter/col_water_deep = Color(0.023529412, 0.09019608, 0.10980392, 1)
+shader_parameter/water_depth = 95.0
+shader_parameter/reflect_amount = 0.85
+shader_parameter/reflect_fade = 260.0
+shader_parameter/reflect_distort = 5.0
+shader_parameter/reflect_tint = Color(0.8, 0.93, 1, 1)
+shader_parameter/reflect_floor = 0.62
+shader_parameter/reflect_squash = 0.0
+shader_parameter/reflect_blur = 0.8
+shader_parameter/reflect_blur_grow = 0.025
+shader_parameter/reflect_blur_max = 6.0
+shader_parameter/reflect_sky = Color(0.101960786, 0.16470589, 0.19215687, 1)
+shader_parameter/reflect_absorb = 0.32
+shader_parameter/water_solid = 1.0
+shader_parameter/underwater_amount = 0.0
+shader_parameter/underwater_max_depth = 1800.0
+shader_parameter/refract_amount = 0.0
+shader_parameter/refract_distort = 3.0
+shader_parameter/refract_depth = 120.0
+shader_parameter/refract_absorb = 0.55
+shader_parameter/refract_tint = Color(0.7019608, 0.8392157, 0.7882353, 1)
+shader_parameter/streak_amount = 0.5
+shader_parameter/glint_amount = 0.0
+shader_parameter/glint_x = 0.5
+shader_parameter/glint_width = 0.06
+shader_parameter/surface_sheen = 0.8
+shader_parameter/shore_wave_amp = 0.0
+shader_parameter/shore_wave_len = 1500.0
+shader_parameter/surface_wave_amount = 1.0
+shader_parameter/surface_wave_height = 10.0
+shader_parameter/surface_wave_speed = 150.0
+shader_parameter/surface_wave_len = 70.0
+shader_parameter/surface_wave_decay = 260.0
+shader_parameter/surface_wave_life = 2.2
+shader_parameter/surface_swell = 1.4
+shader_parameter/surface_baseline = 6.0
+shader_parameter/surface_wave_zoom = 1.0
+shader_parameter/wave_count = 0.0
+shader_parameter/pt_count = 4.0
+shader_parameter/pts_tex = SubResource("ImageTexture_1n3re")
+shader_parameter/winding = 1.0
+
+[node name="Test-scene" type="Node2D" unique_id=701543349]
+
+[node name="deepside" type="Marker2D" parent="." unique_id=452894413]
+position = Vector2(1435, 657)
+
+[node name="CanvasModulate" type="ColorRect" parent="." unique_id=1802602312]
+z_index = -2
+material = ExtResource("1_niox5")
+offset_left = -9182.0
+offset_top = -5229.0
+offset_right = 13654.0
+offset_bottom = 1458.0
+color = Color(0.84313726, 0.59607846, 0.35686275, 1)
+
+[node name="Node2D" type="Node2D" parent="." unique_id=1814114332]
+modulate = Color(0.12941177, 0.2784314, 0.30980393, 1)
+texture_filter = 1
+position = Vector2(1783, 544)
+scale = Vector2(4.79771, 4.79771)
+
+[node name="rock" type="StaticBody2D" parent="." unique_id=721295933]
+position = Vector2(0, 645)
+collision_layer = 4
+collision_mask = 4
+physics_material_override = SubResource("PhysicsMaterial_puuf6")
+script = ExtResource("2_ixuv2")
+visual_rise = 10.0
+style = "rocky"
+
+[node name="surface" type="Sprite2D" parent="rock" unique_id=8323329]
+position = Vector2(405.00003, 4)
+scale = Vector2(31.60684, 1)
+texture = ExtResource("1_t4wbk")
+region_enabled = true
+region_rect = Rect2(567.5, 167.74998, 117, 16.5)
+
+[node name="Collision" type="CollisionPolygon2D" parent="rock" unique_id=1458367301]
+polygon = PackedVector2Array(-1365, 7, 200, -145, 484, -18, 704, 126, 2900, 15, 3063, -1117, 3185, -905, 3090, -87, 4626, -140, 4748, -1296, 4919, -1239, 5090, -59, 7019, -10, 8689, -106, 9054, -586, 7115, -2391, 6405, -2103, 6078, -2218, 7192, -2717, 10010, -176, 10378, 316, -1086, 304)
+
+[node name="Visual" type="Polygon2D" parent="rock" unique_id=665501080]
+material = SubResource("ShaderMaterial_ejjxq")
+polygon = PackedVector2Array(-1365, -3, 200, -155, 484, -28, 704, 116, 2900, 5, 3063, -1127, 3185, -915, 3090, -97, 4626, -150, 4748, -1306, 4919, -1249, 5090, -69, 7019, -20, 8689, -116, 9054, -596, 7115, -2401, 6405, -2113, 6078, -2228, 7192, -2727, 10010, -186, 10378, 306, -1086, 294)
+
+[node name="base" type="StaticBody2D" parent="." unique_id=1795007816]
+position = Vector2(0, 645)
+physics_material_override = SubResource("PhysicsMaterial_puuf6")
+script = ExtResource("2_ixuv2")
+visual_rise = 10.0
+
+[node name="surface" type="Sprite2D" parent="base" unique_id=1996354579]
+position = Vector2(405.00003, 4)
+scale = Vector2(31.60684, 1)
+texture = ExtResource("1_t4wbk")
+region_enabled = true
+region_rect = Rect2(567.5, 167.74998, 117, 16.5)
+
+[node name="Collision" type="CollisionPolygon2D" parent="base" unique_id=1862073710]
+polygon = PackedVector2Array(-9350, -145, 200, -145, 484, -18, 704, 126, 1503, 245, 2264, 141, 2600, -145, 3090, -87, 8685, -110, 9011, -198, 10010, -176, 13126, 487, -9520, 433)
+
+[node name="Visual" type="Polygon2D" parent="base" unique_id=438244107]
+material = SubResource("ShaderMaterial_ha6ax")
+polygon = PackedVector2Array(-9350, -156, 200, -156, 484, -29, 704, 115, 1503, 234, 2264, 130, 2600, -156, 3090, -98, 8685, -121, 9011, -209, 10010, -187, 13126, 476, -9520, 422)
+
+[node name="main-camera" type="Camera2D" parent="." unique_id=1331653700]
+position = Vector2(161, 301)
+zoom = Vector2(0.5, 0.5)
+script = ExtResource("5_niox5")
+target_path = NodePath("../Player")
+
+[node name="PortalStation" parent="." unique_id=1421229303 instance=ExtResource("5_h7iep")]
+position = Vector2(-1165, 645)
+
+[node name="Player" parent="." unique_id=1006312565 instance=ExtResource("2_j1f80")]
+modulate = Color(0.6, 0.85, 0.9, 1)
+position = Vector2(161, 282.00006)
+scale = Vector2(0.2, 0.2)
+collision_layer = 1
+dash_time = 0.4
+
+[node name="ProjectileLayer" type="Node2D" parent="." unique_id=1728835098]
+z_index = 10
+z_as_relative = false
+script = ExtResource("13_proj")
+
+[node name="Node2D2" type="Node2D" parent="." unique_id=2091678498]
+modulate = Color(1, 0.5137255, 1, 1)
+position = Vector2(0, 228)
+
+[node name="BatchG2193Env" type="Sprite2D" parent="Node2D2" unique_id=156207876]
+position = Vector2(-856, 203)
+texture = ExtResource("12_ejjxq")
+
+[node name="forground-water" type="StaticBody2D" parent="." unique_id=1762594518]
+texture_filter = 1
+position = Vector2(0, 683)
+physics_material_override = SubResource("PhysicsMaterial_puuf6")
+script = ExtResource("2_ixuv2")
+style = "swamp_water"
+waterline_offset = 84.0
+
+[node name="surface" type="Sprite2D" parent="forground-water" unique_id=163982139]
+visible = false
+position = Vector2(405.00003, 4)
+scale = Vector2(31.60684, 1)
+texture = ExtResource("1_t4wbk")
+region_enabled = true
+region_rect = Rect2(567.5, 167.74998, 117, 16.5)
+
+[node name="Collision" type="CollisionPolygon2D" parent="forground-water" unique_id=978300368]
+visible = false
+polygon = PackedVector2Array(-9792, -150, 13807, -150, 13807, 737, -9860, 669)
+disabled = true
+
+[node name="Visual" type="Polygon2D" parent="forground-water" unique_id=1848112409]
+texture_filter = 1
+material = SubResource("ShaderMaterial_jxbhy")
+polygon = PackedVector2Array(-9792, -69, 13807, -69, 13807, 734, -9860, 666)
+
+[node name="WaterVolume" type="Area2D" parent="forground-water" unique_id=86451086]
+collision_layer = 16
+collision_mask = 7
+script = ExtResource("10_3g5ya")
+
+[node name="WaterShape" type="CollisionPolygon2D" parent="forground-water/WaterVolume" unique_id=1536434500]
+visible = false
+polygon = PackedVector2Array(-9792, -69, 13807, -69, 13807, 734, -9860, 666)

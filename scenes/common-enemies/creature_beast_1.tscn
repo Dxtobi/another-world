@@ -1,0 +1,810 @@
+[gd_scene format=3 uid="uid://cxi0ar3l4ym3i"]
+
+[ext_resource type="Script" uid="uid://bnso0mph1tb11" path="res://addons/soupik/modifications/soup_two_bone_ik.gd" id="1_bkb4c"]
+[ext_resource type="Script" uid="uid://dmnhc8nuryjfd" path="res://scenes/common-enemies/creature_beast_1.gd" id="1_lwmj0"]
+[ext_resource type="Texture2D" uid="uid://bymt6jc17oxb6" path="res://sprites/beast/batch_g240.png" id="1_xv5jb"]
+[ext_resource type="Texture2D" uid="uid://ded1vrfckmmu4" path="res://sprites/beast/batch_path197.png" id="2_6oa6h"]
+[ext_resource type="Script" uid="uid://b5uiivwxcoics" path="res://addons/soupik/modifications/soup_bone_control.gd" id="2_7w7dj"]
+[ext_resource type="Texture2D" uid="uid://bp14q1ypg3gfj" path="res://sprites/beast/batch_g198.png" id="3_bkb4c"]
+[ext_resource type="Texture2D" uid="uid://rw7mi5ykactf" path="res://sprites/beast/batch_g241.png" id="4_7w7dj"]
+[ext_resource type="Texture2D" uid="uid://ubs8hv7ak7lr" path="res://sprites/beast/batch_g246.png" id="5_lwmj0"]
+[ext_resource type="Texture2D" uid="uid://byytm3ceyqohj" path="res://sprites/beast/batch_path193.png" id="6_mdbm1"]
+[ext_resource type="Texture2D" uid="uid://djjuexjpgdyok" path="res://sprites/beast/batch_path194.png" id="7_qgg0b"]
+[ext_resource type="Texture2D" uid="uid://c41p1mcw35b7l" path="res://sprites/beast/batch_path195.png" id="8_t5mgf"]
+[ext_resource type="Script" uid="uid://c20kgrku2joaj" path="res://addons/soupik/modifications/soup_bone.gd" id="9_6oa6h"]
+
+[sub_resource type="Animation" id="Animation_7w7dj"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Rig/frontleg-left:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(262, 434)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Rig/frontleg-left:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Rig/frontleg-right:position")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(259, 433)]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Rig/frontleg-right:rotation")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("Rig/backleg_ankle-2:position")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(429, 389)]
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("Rig/backleg_ankle-2:rotation")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("Rig/backleg_ankle-1:position")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(427, 389.99988)]
+}
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("Rig/backleg_ankle-1:rotation")
+tracks/7/interp = 1
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/8/type = "value"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("Rig/head2:position")
+tracks/8/interp = 1
+tracks/8/loop_wrap = true
+tracks/8/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(152, 341.0007)]
+}
+tracks/9/type = "value"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("Rig/head2:rotation")
+tracks/9/interp = 1
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [1.909925e-07]
+}
+tracks/10/type = "value"
+tracks/10/imported = false
+tracks/10/enabled = true
+tracks/10/path = NodePath("toso:modulate")
+tracks/10/interp = 1
+tracks/10/loop_wrap = true
+tracks/10/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(0.20582321, 3.4052507e-06, 0.15160647, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_lwmj0"]
+resource_name = "idle"
+loop_mode = 2
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Rig/frontleg-left:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(262, 434)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Rig/frontleg-left:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Rig/frontleg-right:position")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(259, 433)]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Rig/frontleg-right:rotation")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("Rig/backleg_ankle-2:position")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(429, 389)]
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("Rig/backleg_ankle-2:rotation")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("Rig/backleg_ankle-1:position")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(427, 389.99988)]
+}
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("Rig/backleg_ankle-1:rotation")
+tracks/7/interp = 1
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/8/type = "value"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("Rig/head2:position")
+tracks/8/interp = 2
+tracks/8/loop_wrap = true
+tracks/8/keys = {
+"times": PackedFloat32Array(0, 0.8666667),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector2(152, 341.0007), Vector2(152, 336)]
+}
+tracks/9/type = "value"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("Rig/head2:rotation")
+tracks/9/interp = 1
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [1.909925e-07]
+}
+tracks/10/type = "value"
+tracks/10/imported = false
+tracks/10/enabled = true
+tracks/10/path = NodePath("toso:modulate")
+tracks/10/interp = 1
+tracks/10/loop_wrap = true
+tracks/10/keys = {
+"times": PackedFloat32Array(0, 0.5),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Color(0.20582321, 3.4052507e-06, 0.15160647, 1), Color(0.36540344, 1.2441799e-05, 0.2826287, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_mdbm1"]
+resource_name = "walking"
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Rig/frontleg-left:position")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.6024547, 0.80066496),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector2(262, 434), Vector2(209, 420), Vector2(217, 434)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Rig/frontleg-left:rotation")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Rig/frontleg-right:position")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.20212226, 0.39772445, 0.6024547),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector2(259, 433), Vector2(198, 422), Vector2(207, 434), Vector2(262, 435)]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Rig/frontleg-right:rotation")
+tracks/3/interp = 2
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("Rig/backleg_ankle-2:position")
+tracks/4/interp = 2
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0, 0.6024547, 0.80066496),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector2(429, 389), Vector2(392, 375), Vector2(384, 387)]
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("Rig/backleg_ankle-2:rotation")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("Rig/backleg_ankle-1:position")
+tracks/6/interp = 2
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(0, 0.20212226, 0.39772445, 0.6024547),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector2(427, 389.99988), Vector2(386, 377), Vector2(366, 390), Vector2(422, 385)]
+}
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("Rig/backleg_ankle-1:rotation")
+tracks/7/interp = 1
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/8/type = "value"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("Rig/head2:position")
+tracks/8/interp = 2
+tracks/8/loop_wrap = true
+tracks/8/keys = {
+"times": PackedFloat32Array(0, 0.46666667),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector2(152, 341.0007), Vector2(147, 329)]
+}
+tracks/9/type = "value"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("Rig/head2:rotation")
+tracks/9/interp = 1
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [1.909925e-07]
+}
+tracks/10/type = "value"
+tracks/10/imported = false
+tracks/10/enabled = true
+tracks/10/path = NodePath("toso:modulate")
+tracks/10/interp = 2
+tracks/10/loop_wrap = true
+tracks/10/keys = {
+"times": PackedFloat32Array(0, 0.12648942, 0.6024547),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Color(0.36540344, 1.2441799e-05, 0.2826287, 1), Color(0.36540344, 1.2441799e-05, 0.2826287, 1), Color(0.4065967, 1.607567e-05, 0.31602475, 1)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_mdbm1"]
+_data = {
+&"RESET": SubResource("Animation_7w7dj"),
+&"idle": SubResource("Animation_lwmj0"),
+&"walking": SubResource("Animation_mdbm1")
+}
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_c5yxb"]
+size = Vector2(147.5, 134.5)
+
+[node name="CreatureBeast-1" type="CharacterBody2D" unique_id=2146214334 node_paths=PackedStringArray("visual_root", "animation_player", "feet", "head_target")]
+script = ExtResource("1_lwmj0")
+visual_root = NodePath("bodyforscalingandfliping")
+animation_player = NodePath("bodyforscalingandfliping/AnimationPlayer")
+feet = [NodePath("bodyforscalingandfliping/Rig/frontleg-left"), NodePath("bodyforscalingandfliping/Rig/frontleg-right"), NodePath("bodyforscalingandfliping/Rig/backleg_ankle-2"), NodePath("bodyforscalingandfliping/Rig/backleg_ankle-1")]
+head_target = NodePath("bodyforscalingandfliping/Rig/head2")
+foot_height = 0.0
+
+[node name="bodyforscalingandfliping" type="Node2D" parent="." unique_id=151907223]
+
+[node name="Rig" type="Node2D" parent="bodyforscalingandfliping" unique_id=2031932357]
+
+[node name="head" type="Node2D" parent="bodyforscalingandfliping/Rig" unique_id=1236218755 node_paths=PackedStringArray("target_node", "joint_one_bone_node", "joint_two_bone_node")]
+script = ExtResource("1_bkb4c")
+flip_bend_direction = true
+target_node = NodePath("../head2")
+joint_one_bone_node = NodePath("../../Skeleton2D/toso_bone/head_bone")
+joint_two_bone_node = NodePath("../../Skeleton2D/toso_bone/head_bone")
+metadata/_custom_type_script = "uid://bnso0mph1tb11"
+
+[node name="backleg-left" type="Node2D" parent="bodyforscalingandfliping/Rig" unique_id=1241815795 node_paths=PackedStringArray("target_node", "joint_one_bone_node", "joint_two_bone_node")]
+script = ExtResource("1_bkb4c")
+target_node = NodePath("../backleg_ankle-2")
+joint_one_bone_node = NodePath("../../Skeleton2D/toso_bone/back-leg-2_bone")
+joint_two_bone_node = NodePath("../../Skeleton2D/toso_bone/back-leg-2_bone/back-leg-2_bone")
+metadata/_custom_type_script = "uid://bnso0mph1tb11"
+
+[node name="frontleg-left-soup" type="Node2D" parent="bodyforscalingandfliping/Rig" unique_id=1532626215 node_paths=PackedStringArray("target_node", "joint_one_bone_node", "joint_two_bone_node")]
+script = ExtResource("1_bkb4c")
+flip_bend_direction = true
+target_node = NodePath("../frontleg-left")
+joint_one_bone_node = NodePath("../../Skeleton2D/toso_bone/front-leg-1_bone")
+joint_two_bone_node = NodePath("../../Skeleton2D/toso_bone/front-leg-1_bone/front-leg-2_bone")
+metadata/_custom_type_script = "uid://bnso0mph1tb11"
+
+[node name="frontleksoup-rigt" type="Node2D" parent="bodyforscalingandfliping/Rig" unique_id=820424738 node_paths=PackedStringArray("target_node", "joint_one_bone_node", "joint_two_bone_node")]
+script = ExtResource("1_bkb4c")
+flip_bend_direction = true
+target_node = NodePath("../frontleg-right")
+joint_one_bone_node = NodePath("../../Skeleton2D/toso_bone/front-leg-2_bone")
+joint_two_bone_node = NodePath("../../Skeleton2D/toso_bone/front-leg-2_bone/front-leg-2_bone")
+metadata/_custom_type_script = "uid://bnso0mph1tb11"
+
+[node name="frontleg-left" type="Marker2D" parent="bodyforscalingandfliping/Rig" unique_id=252085003]
+position = Vector2(262, 434)
+
+[node name="frontleg-right" type="Marker2D" parent="bodyforscalingandfliping/Rig" unique_id=1300503418]
+position = Vector2(259, 433)
+
+[node name="backleg_ankle-2" type="Marker2D" parent="bodyforscalingandfliping/Rig" unique_id=1957828365]
+position = Vector2(429, 389)
+
+[node name="backleg_ankle-1" type="Marker2D" parent="bodyforscalingandfliping/Rig" unique_id=1575164497]
+position = Vector2(427, 389.99988)
+
+[node name="head2" type="Marker2D" parent="bodyforscalingandfliping/Rig" unique_id=1324521660]
+position = Vector2(152, 341.0007)
+
+[node name="backleg-soup-1" type="Node2D" parent="bodyforscalingandfliping/Rig" unique_id=1699434268 node_paths=PackedStringArray("target_node", "joint_one_bone_node", "joint_two_bone_node")]
+script = ExtResource("1_bkb4c")
+target_node = NodePath("../backleg_ankle-1")
+joint_one_bone_node = NodePath("../../Skeleton2D/toso_bone/back-leg-1_bone")
+joint_two_bone_node = NodePath("../../Skeleton2D/toso_bone/back-leg-1_bone/back-leg-2_bone")
+metadata/_custom_type_script = "uid://bnso0mph1tb11"
+
+[node name="backleg-soup-1-1" type="Node2D" parent="bodyforscalingandfliping/Rig" unique_id=702372492 node_paths=PackedStringArray("bone_node", "target_node")]
+script = ExtResource("2_7w7dj")
+control_rotation = true
+bone_node = NodePath("../../Skeleton2D/toso_bone/back-leg-1_bone/back-leg-2_bone/back-leg-3_bone")
+target_node = NodePath("../backleg_ankle-1")
+metadata/_custom_type_script = "uid://b5uiivwxcoics"
+
+[node name="backleg-left2" type="Node2D" parent="bodyforscalingandfliping/Rig" unique_id=821741562 node_paths=PackedStringArray("bone_node", "target_node")]
+script = ExtResource("2_7w7dj")
+control_rotation = true
+bone_node = NodePath("../../Skeleton2D/toso_bone/back-leg-2_bone/back-leg-2_bone/back-leg-3_bone")
+target_node = NodePath("../backleg_ankle-2")
+metadata/_custom_type_script = "uid://b5uiivwxcoics"
+
+[node name="toso" type="Sprite2D" parent="bodyforscalingandfliping" unique_id=1937449282]
+modulate = Color(0.20582321, 3.4052507e-06, 0.15160647, 1)
+position = Vector2(375, 332)
+rotation = 0.0007009506
+scale = Vector2(0.99734545, 0.99734545)
+texture = ExtResource("1_xv5jb")
+offset = Vector2(-55, -28)
+
+[node name="front-leg-1" type="Sprite2D" parent="bodyforscalingandfliping/toso" unique_id=789796333]
+z_index = -1
+position = Vector2(-118.31412, -20.053253)
+rotation = -0.08414116
+scale = Vector2(0.99937075, 0.99937075)
+texture = ExtResource("2_6oa6h")
+offset = Vector2(8, 23)
+
+[node name="front-leg-2" type="Sprite2D" parent="bodyforscalingandfliping/toso/front-leg-1" unique_id=997695918]
+position = Vector2(30.481659, 64.19473)
+rotation = 0.090672635
+scale = Vector2(0.998286, 0.998286)
+texture = ExtResource("3_bkb4c")
+offset = Vector2(-30, 25)
+
+[node name="head" type="Sprite2D" parent="bodyforscalingandfliping/toso" unique_id=1433923915]
+position = Vector2(-144.38329, -18.047913)
+rotation = 0.082741015
+scale = Vector2(1.0015571, 1.0015571)
+texture = ExtResource("4_7w7dj")
+offset = Vector2(-28, 4)
+
+[node name="tail" type="Sprite2D" parent="bodyforscalingandfliping/toso" unique_id=296270556]
+position = Vector2(27.071838, -9.023956)
+scale = Vector2(0.9999214, 0.9999214)
+texture = ExtResource("5_lwmj0")
+offset = Vector2(25, 4)
+
+[node name="back-leg-1" type="Sprite2D" parent="bodyforscalingandfliping/toso" unique_id=322251665]
+z_index = -1
+position = Vector2(2.0052795, -16.042603)
+rotation = 0.27104488
+scale = Vector2(1.002507, 1.002507)
+texture = ExtResource("6_mdbm1")
+offset = Vector2(7, 25)
+
+[node name="back-leg-2" type="Sprite2D" parent="bodyforscalingandfliping/toso/back-leg-1" unique_id=371278311]
+position = Vector2(20.003113, 52.007965)
+rotation = -0.39759475
+scale = Vector2(0.99716574, 0.99716574)
+texture = ExtResource("7_qgg0b")
+offset = Vector2(18, 10)
+
+[node name="back-leg-3" type="Sprite2D" parent="bodyforscalingandfliping/toso/back-leg-1/back-leg-2" unique_id=2067665839]
+position = Vector2(42.125885, 24.07193)
+rotation = 0.1258489
+scale = Vector2(1.000968, 1.0009317)
+texture = ExtResource("8_t5mgf")
+offset = Vector2(-2, 22)
+
+[node name="back-leg-2" type="Sprite2D" parent="bodyforscalingandfliping/toso" unique_id=827898289]
+position = Vector2(2.0052795, -16.042603)
+rotation = 0.24087314
+scale = Vector2(1.0021975, 1.0021975)
+texture = ExtResource("6_mdbm1")
+offset = Vector2(7, 25)
+
+[node name="back-leg-2" type="Sprite2D" parent="bodyforscalingandfliping/toso/back-leg-2" unique_id=32978485]
+position = Vector2(20.009308, 52.024033)
+rotation = -0.38558584
+scale = Vector2(1.00081, 1.00081)
+texture = ExtResource("7_qgg0b")
+offset = Vector2(18, 10)
+
+[node name="back-leg-3" type="Sprite2D" parent="bodyforscalingandfliping/toso/back-leg-2/back-leg-2" unique_id=1411673829]
+position = Vector2(41.985413, 23.991669)
+rotation = 0.14401177
+scale = Vector2(1.0001296, 1.0001296)
+texture = ExtResource("8_t5mgf")
+offset = Vector2(-2, 22)
+
+[node name="front-leg-2" type="Sprite2D" parent="bodyforscalingandfliping/toso" unique_id=566208592]
+position = Vector2(-118.31412, -20.053253)
+rotation = 0.016418384
+scale = Vector2(1.000492, 1.000492)
+texture = ExtResource("2_6oa6h")
+offset = Vector2(8, 23)
+
+[node name="front-leg-2" type="Sprite2D" parent="bodyforscalingandfliping/toso/front-leg-2" unique_id=335666193]
+position = Vector2(36.078094, 61.132294)
+rotation = 0.035198994
+scale = Vector2(1.0011404, 1.0011404)
+texture = ExtResource("3_bkb4c")
+offset = Vector2(-30, 25)
+
+[node name="Skeleton2D" type="Skeleton2D" parent="bodyforscalingandfliping" unique_id=1453130268]
+visible = false
+
+[node name="toso_bone" type="Bone2D" parent="bodyforscalingandfliping/Skeleton2D" unique_id=788403181]
+position = Vector2(375, 332)
+rotation = 0.0007009506
+rest = Transform2D(1, 0, 0, 1, 375, 332)
+script = ExtResource("9_6oa6h")
+transform_mode = 0
+target_rotation = 0.0007009506
+target_position = Vector2(375, 332)
+
+[node name="Remote" type="RemoteTransform2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone" unique_id=355813959]
+remote_path = NodePath("../../../toso")
+update_scale = false
+
+[node name="front-leg-1_bone" type="Bone2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone" unique_id=1288973771]
+position = Vector2(-118, -20)
+rotation = -0.08414115
+rest = Transform2D(1, 0, 0, 1, -118, -20)
+script = ExtResource("9_6oa6h")
+transform_mode = 0
+target_rotation = -0.08414115
+target_position = Vector2(-118, -20)
+
+[node name="Remote" type="RemoteTransform2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone/front-leg-1_bone" unique_id=87921625]
+remote_path = NodePath("../../../../toso/front-leg-1")
+update_scale = false
+
+[node name="front-leg-2_bone" type="Bone2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone/front-leg-1_bone" unique_id=408571841]
+position = Vector2(30.381592, 63.98401)
+rotation = 0.09067263
+scale = Vector2(0.99999994, 0.99999994)
+rest = Transform2D(0.9959667, 0.08972405, -0.08972405, 0.9959667, 30.381592, 63.98401)
+auto_calculate_length_and_angle = false
+length = 68.124
+bone_angle = 116.298
+script = ExtResource("9_6oa6h")
+transform_mode = 0
+target_rotation = 0.09067263
+target_position = Vector2(30.381592, 63.98401)
+
+[node name="Remote" type="RemoteTransform2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone/front-leg-1_bone/front-leg-2_bone" unique_id=936703349]
+remote_path = NodePath("../../../../../toso/front-leg-1/front-leg-2")
+update_scale = false
+
+[node name="head_bone" type="Bone2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone" unique_id=1168148628]
+position = Vector2(-144, -18)
+rotation = 0.08274102
+scale = Vector2(0.9999988, 0.9999988)
+rest = Transform2D(1, 0, 0, 1, -144, -18)
+auto_calculate_length_and_angle = false
+length = 80.887
+bone_angle = 156.28696
+script = ExtResource("9_6oa6h")
+transform_mode = 0
+target_rotation = 0.08274102
+target_position = Vector2(-144, -18)
+
+[node name="Remote" type="RemoteTransform2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone/head_bone" unique_id=116167145]
+remote_path = NodePath("../../../../toso/head")
+update_scale = false
+
+[node name="tail_bone" type="Bone2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone" unique_id=1165093897]
+position = Vector2(27, -9)
+rest = Transform2D(1, 0, 0, 1, 27, -9)
+auto_calculate_length_and_angle = false
+length = 68.124
+bone_angle = 17.888
+script = ExtResource("9_6oa6h")
+transform_mode = 0
+target_position = Vector2(27, -9)
+
+[node name="Remote" type="RemoteTransform2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone/tail_bone" unique_id=524821980]
+remote_path = NodePath("../../../../toso/tail")
+update_scale = false
+
+[node name="back-leg-1_bone" type="Bone2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone" unique_id=1142948053]
+position = Vector2(2, -16)
+rotation = 0.27104488
+scale = Vector2(0.9999999, 0.9999999)
+rest = Transform2D(1, 0, 0, 1, 2, -16)
+script = ExtResource("9_6oa6h")
+transform_mode = 0
+target_rotation = 0.27104488
+target_position = Vector2(2, -16)
+
+[node name="Remote" type="RemoteTransform2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone/back-leg-1_bone" unique_id=868343638]
+remote_path = NodePath("../../../../toso/back-leg-1")
+update_scale = false
+
+[node name="back-leg-2_bone" type="Bone2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone/back-leg-1_bone" unique_id=2001691062]
+position = Vector2(20.00003, 51.99997)
+rotation = -0.39759478
+scale = Vector2(0.99999964, 0.99999964)
+rest = Transform2D(1, 0, 0, 1, 20.00003, 51.99997)
+script = ExtResource("9_6oa6h")
+transform_mode = 0
+target_rotation = -0.39759478
+target_position = Vector2(20.00003, 51.99997)
+
+[node name="Remote" type="RemoteTransform2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone/back-leg-1_bone/back-leg-2_bone" unique_id=456169977]
+remote_path = NodePath("../../../../../toso/back-leg-1/back-leg-2")
+update_scale = false
+
+[node name="back-leg-3_bone" type="Bone2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone/back-leg-1_bone/back-leg-2_bone" unique_id=1205867425]
+position = Vector2(41.99997, 24)
+rotation = 0.12584893
+scale = Vector2(1.0000005, 1.0000005)
+rest = Transform2D(1, 0, 0, 1, 41.99997, 24)
+auto_calculate_length_and_angle = false
+length = 47.0
+bone_angle = 73.99998
+script = ExtResource("9_6oa6h")
+transform_mode = 0
+target_rotation = 0.12584893
+target_position = Vector2(41.99997, 24)
+
+[node name="Remote" type="RemoteTransform2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone/back-leg-1_bone/back-leg-2_bone/back-leg-3_bone" unique_id=2018986825]
+remote_path = NodePath("../../../../../../toso/back-leg-1/back-leg-2/back-leg-3")
+update_scale = false
+
+[node name="back-leg-2_bone" type="Bone2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone" unique_id=814928058]
+visible = false
+position = Vector2(2, -16)
+rotation = 0.24087313
+scale = Vector2(0.9999997, 0.9999997)
+rest = Transform2D(1, 0, 0, 1, 2, -16)
+script = ExtResource("9_6oa6h")
+transform_mode = 0
+target_rotation = 0.24087314
+target_position = Vector2(2, -16)
+
+[node name="Remote" type="RemoteTransform2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone/back-leg-2_bone" unique_id=1144486677]
+remote_path = NodePath("../../../../toso/back-leg-2")
+update_scale = false
+
+[node name="back-leg-2_bone" type="Bone2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone/back-leg-2_bone" unique_id=553395314]
+position = Vector2(20.00003, 51.99997)
+rotation = -0.3855858
+scale = Vector2(0.99999964, 0.99999964)
+rest = Transform2D(1, 0, 0, 1, 20.00003, 51.99997)
+script = ExtResource("9_6oa6h")
+transform_mode = 0
+target_rotation = -0.38558584
+target_position = Vector2(20.00003, 51.99997)
+
+[node name="Remote" type="RemoteTransform2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone/back-leg-2_bone/back-leg-2_bone" unique_id=35032981]
+remote_path = NodePath("../../../../../toso/back-leg-2/back-leg-2")
+update_scale = false
+
+[node name="back-leg-3_bone" type="Bone2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone/back-leg-2_bone/back-leg-2_bone" unique_id=1985974540]
+position = Vector2(41.99997, 24)
+rotation = 0.14401175
+scale = Vector2(1.0000006, 1.0000006)
+rest = Transform2D(1, 0, 0, 1, 41.99997, 24)
+auto_calculate_length_and_angle = false
+length = 49.062
+bone_angle = 71.552986
+script = ExtResource("9_6oa6h")
+transform_mode = 0
+target_rotation = 0.14401175
+target_position = Vector2(41.99997, 24)
+
+[node name="Remote" type="RemoteTransform2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone/back-leg-2_bone/back-leg-2_bone/back-leg-3_bone" unique_id=430620918]
+remote_path = NodePath("../../../../../../toso/back-leg-2/back-leg-2/back-leg-3")
+update_scale = false
+
+[node name="front-leg-2_bone" type="Bone2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone" unique_id=772008683]
+position = Vector2(-118, -20)
+rotation = 0.016418386
+scale = Vector2(0.99999946, 0.99999946)
+rest = Transform2D(1, 0, 0, 1, -118, -20)
+script = ExtResource("9_6oa6h")
+transform_mode = 0
+target_rotation = 0.016418386
+target_position = Vector2(-118, -20)
+
+[node name="Remote" type="RemoteTransform2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone/front-leg-2_bone" unique_id=1947626992]
+remote_path = NodePath("../../../../toso/front-leg-2")
+update_scale = false
+
+[node name="front-leg-2_bone" type="Bone2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone/front-leg-2_bone" unique_id=1540942624]
+position = Vector2(36, 60.99997)
+rotation = 0.035198998
+scale = Vector2(0.9999992, 0.9999992)
+rest = Transform2D(1, 0, 0, 1, 36, 60.99997)
+auto_calculate_length_and_angle = false
+length = 68.0
+bone_angle = 115.99996
+script = ExtResource("9_6oa6h")
+transform_mode = 0
+target_rotation = 0.035198998
+target_position = Vector2(36, 60.99997)
+
+[node name="Remote" type="RemoteTransform2D" parent="bodyforscalingandfliping/Skeleton2D/toso_bone/front-leg-2_bone/front-leg-2_bone" unique_id=921567038]
+remote_path = NodePath("../../../../../toso/front-leg-2/front-leg-2")
+update_scale = false
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="bodyforscalingandfliping" unique_id=1315792074]
+libraries/ = SubResource("AnimationLibrary_mdbm1")
+autoplay = &"idle"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=416997833]
+position = Vector2(327.25, 354.25)
+shape = SubResource("RectangleShape2D_c5yxb")

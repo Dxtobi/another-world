@@ -1,0 +1,198 @@
+[gd_scene format=3 uid="uid://csdygebwg2cro"]
+
+[ext_resource type="Texture2D" uid="uid://ddqk4qm3vwkyk" path="res://sprites/sharmen/batch_g102.png" id="1_8cqyd"]
+[ext_resource type="Texture2D" uid="uid://b5cav6c6rvs0f" path="res://sprites/sharmen/batch_g125.png" id="2_gv7h5"]
+[ext_resource type="Texture2D" uid="uid://bbx4nqq0odx8d" path="res://sprites/sharmen/batch_g103.png" id="3_5faiq"]
+[ext_resource type="Texture2D" uid="uid://wt3tdxaslwlm" path="res://sprites/sharmen/batch_g109.png" id="4_y82tb"]
+[ext_resource type="Texture2D" uid="uid://4s4lwvrd6ahc" path="res://sprites/sharmen/batch_g110.png" id="5_7yt8n"]
+[ext_resource type="Texture2D" uid="uid://bxppsuk85kpma" path="res://sprites/sharmen/batch_g111.png" id="6_46awl"]
+[ext_resource type="Texture2D" uid="uid://cua77ewycni8g" path="res://sprites/sharmen/batch_g112.png" id="7_um1rl"]
+[ext_resource type="Texture2D" uid="uid://2baon67vvyl2" path="res://sprites/sharmen/batch_g123.png" id="8_q571u"]
+[ext_resource type="Texture2D" uid="uid://0xpsjmyhmmap" path="res://sprites/sharmen/batch_g124.png" id="9_x67gy"]
+[ext_resource type="Texture2D" uid="uid://rdmqwkplcd78" path="res://sprites/sharmen/batch_g114.png" id="10_ogiwr"]
+
+[node name="creatureone" type="Node2D" unique_id=1601561227]
+
+[node name="Skeleton2D" type="Skeleton2D" parent="." unique_id=367312220]
+position = Vector2(89, 486)
+
+[node name="toso" type="Bone2D" parent="Skeleton2D" unique_id=591695647]
+rest = Transform2D(1, 0, 0, 1, 0, 0)
+
+[node name="chest" type="Bone2D" parent="Skeleton2D/toso" unique_id=1231294566]
+position = Vector2(6, -33)
+rest = Transform2D(1, 0, 0, 1, 4, -37)
+
+[node name="head" type="Bone2D" parent="Skeleton2D/toso/chest" unique_id=1223700398]
+position = Vector2(43, -14)
+rest = Transform2D(1, 0, 0, 1, 43, -14)
+
+[node name="RemoteTransform2D" type="RemoteTransform2D" parent="Skeleton2D/toso/chest/head" unique_id=1713380873]
+remote_path = NodePath("../../../../../sprite/chest/head")
+
+[node name="RemoteTransform2D" type="RemoteTransform2D" parent="Skeleton2D/toso/chest" unique_id=227852521]
+remote_path = NodePath("../../../../sprite/chest")
+
+[node name="lh-upper" type="Bone2D" parent="Skeleton2D/toso" unique_id=1829217245]
+position = Vector2(28, -44)
+rest = Transform2D(1, 0, 0, 1, 28, -44)
+
+[node name="lh-lower" type="Bone2D" parent="Skeleton2D/toso/lh-upper" unique_id=579421448]
+position = Vector2(1, 74)
+rest = Transform2D(1, 0, 0, 1, 1, 74)
+
+[node name="hand-l" type="Bone2D" parent="Skeleton2D/toso/lh-upper/lh-lower" unique_id=1373514591]
+position = Vector2(-4, 55)
+rest = Transform2D(1, 0, 0, 1, -4, 55)
+
+[node name="Bone2D" type="Bone2D" parent="Skeleton2D/toso/lh-upper/lh-lower/hand-l" unique_id=602812425]
+position = Vector2(84, -1)
+rest = Transform2D(1, 0, 0, 1, 114, 24)
+
+[node name="RemoteTransform2D" type="RemoteTransform2D" parent="Skeleton2D/toso/lh-upper/lh-lower/hand-l" unique_id=104895158]
+remote_path = NodePath("../../../../../../sprite/lh-lower/BatchG125")
+
+[node name="RemoteTransform2D" type="RemoteTransform2D" parent="Skeleton2D/toso/lh-upper/lh-lower" unique_id=2003179704]
+remote_path = NodePath("../../../../../sprite/lh-lower")
+
+[node name="RemoteTransform2D" type="RemoteTransform2D" parent="Skeleton2D/toso/lh-upper" unique_id=1377936028]
+remote_path = NodePath("../../../../sprite/lh-upper")
+
+[node name="rh-upper2" type="Bone2D" parent="Skeleton2D/toso" unique_id=14029762]
+position = Vector2(28, -44)
+rest = Transform2D(1, 0, 0, 1, 28, -44)
+
+[node name="rh-lower" type="Bone2D" parent="Skeleton2D/toso/rh-upper2" unique_id=121104634]
+position = Vector2(1, 74)
+rest = Transform2D(1, 0, 0, 1, 1, 74)
+
+[node name="hand-l" type="Bone2D" parent="Skeleton2D/toso/rh-upper2/rh-lower" unique_id=419364118]
+position = Vector2(1, 47)
+rest = Transform2D(1, 0, 0, 1, 1, 47)
+
+[node name="RemoteTransform2D" type="RemoteTransform2D" parent="Skeleton2D/toso/rh-upper2/rh-lower" unique_id=797374119]
+remote_path = NodePath("../../../../../sprite/rh-lower")
+
+[node name="RemoteTransform2D" type="RemoteTransform2D" parent="Skeleton2D/toso/rh-upper2" unique_id=1497223880]
+remote_path = NodePath("../../../../sprite/rh-uper")
+
+[node name="ll-upper2" type="Bone2D" parent="Skeleton2D/toso" unique_id=660647220]
+position = Vector2(9, 7)
+rest = Transform2D(1, 0, 0, 1, 14, 6)
+
+[node name="ll-lower" type="Bone2D" parent="Skeleton2D/toso/ll-upper2" unique_id=1670666447]
+position = Vector2(39, 36)
+rest = Transform2D(1, 0, 0, 1, 32, 40)
+
+[node name="foot" type="Bone2D" parent="Skeleton2D/toso/ll-upper2/ll-lower" unique_id=350900870]
+position = Vector2(-12, 72)
+rest = Transform2D(1, 0, 0, 1, -12, 72)
+
+[node name="RemoteTransform2D" type="RemoteTransform2D" parent="Skeleton2D/toso/ll-upper2/ll-lower" unique_id=1236987473]
+remote_path = NodePath("../../../../../sprite/ll-lower")
+
+[node name="RemoteTransform2D" type="RemoteTransform2D" parent="Skeleton2D/toso/ll-upper2" unique_id=1587341195]
+remote_path = NodePath("../../../../sprite/ll-uppr")
+
+[node name="rl-upper" type="Bone2D" parent="Skeleton2D/toso" unique_id=1704016501]
+position = Vector2(-5, 2)
+rest = Transform2D(1, 0, 0, 1, -7, 6)
+
+[node name="rl-lower" type="Bone2D" parent="Skeleton2D/toso/rl-upper" unique_id=13037453]
+position = Vector2(-6, 38)
+rest = Transform2D(1, 0, 0, 1, -6, 38)
+
+[node name="foot" type="Bone2D" parent="Skeleton2D/toso/rl-upper/rl-lower" unique_id=1047019162]
+position = Vector2(-30, 70)
+rest = Transform2D(1, 0, 0, 1, -30, 70)
+
+[node name="RemoteTransform2D" type="RemoteTransform2D" parent="Skeleton2D/toso/rl-upper/rl-lower" unique_id=1979265510]
+remote_path = NodePath("../../../../../sprite/Rl-lower2")
+
+[node name="RemoteTransform2D" type="RemoteTransform2D" parent="Skeleton2D/toso/rl-upper" unique_id=134942057]
+remote_path = NodePath("../../../../sprite/rl-higher")
+
+[node name="RemoteTransform2D" type="RemoteTransform2D" parent="Skeleton2D/toso" unique_id=1268244058]
+remote_path = NodePath("../../../sprite/toso")
+
+[node name="sprite" type="Node2D" parent="." unique_id=406268498]
+
+[node name="lh-lower" type="Sprite2D" parent="sprite" unique_id=97921557]
+position = Vector2(118, 516)
+texture = ExtResource("1_8cqyd")
+offset = Vector2(-3.5, 19)
+
+[node name="BatchG125" type="Sprite2D" parent="sprite/lh-lower" unique_id=193679923]
+position = Vector2(-4, 55)
+texture = ExtResource("2_gv7h5")
+offset = Vector2(26.117493, -7.3150635)
+
+[node name="lh-upper" type="Sprite2D" parent="sprite" unique_id=1869344200]
+position = Vector2(117, 442)
+texture = ExtResource("3_5faiq")
+offset = Vector2(0.5, 35)
+
+[node name="rl-higher" type="Sprite2D" parent="sprite" unique_id=1764569483]
+position = Vector2(84, 488)
+texture = ExtResource("4_y82tb")
+offset = Vector2(-4, 18)
+
+[node name="Rl-lower2" type="Sprite2D" parent="sprite" unique_id=1692829692]
+position = Vector2(78, 526)
+texture = ExtResource("5_7yt8n")
+offset = Vector2(-13, 37)
+
+[node name="ll-lower" type="Sprite2D" parent="sprite" unique_id=1127870826]
+position = Vector2(137, 529)
+texture = ExtResource("6_46awl")
+offset = Vector2(-1.5, 36.5)
+
+[node name="ll-uppr" type="Sprite2D" parent="sprite" unique_id=613216693]
+position = Vector2(98, 493)
+texture = ExtResource("7_um1rl")
+offset = Vector2(20.5, 12.5)
+
+[node name="toso" type="Sprite2D" parent="sprite" unique_id=1208735350]
+position = Vector2(89, 486)
+texture = ExtResource("8_q571u")
+offset = Vector2(1, -22)
+
+[node name="chest" type="Sprite2D" parent="sprite" unique_id=1560989337]
+position = Vector2(95, 453)
+texture = ExtResource("9_x67gy")
+offset = Vector2(21, -17)
+
+[node name="head" type="Sprite2D" parent="sprite/chest" unique_id=1735707485]
+position = Vector2(43, -14)
+texture = ExtResource("10_ogiwr")
+offset = Vector2(20, 4)
+
+[node name="rh-lower" type="Sprite2D" parent="sprite" unique_id=529586751]
+position = Vector2(118, 516)
+texture = ExtResource("1_8cqyd")
+offset = Vector2(-4.5, 18)
+
+[node name="rh-uper" type="Sprite2D" parent="sprite" unique_id=478148625]
+position = Vector2(117, 442)
+texture = ExtResource("3_5faiq")
+offset = Vector2(0.5, 34)
+
+[node name="IK" type="Node2D" parent="." unique_id=484221492]
+
+[node name="lh" type="Marker2D" parent="IK" unique_id=1520850494]
+position = Vector2(230, 598)
+
+[node name="head" type="Marker2D" parent="IK" unique_id=1008934010]
+position = Vector2(175, 436)
+
+[node name="rl" type="Marker2D" parent="IK" unique_id=786646407]
+position = Vector2(47, 600)
+
+[node name="ll" type="Marker2D" parent="IK" unique_id=1537270535]
+position = Vector2(123, 603)
+
+[node name="rh" type="Marker2D" parent="IK" unique_id=1823357604]
+position = Vector2(120, 563)
+
+[node name="soup" type="Node2D" parent="." unique_id=206485350]
+position = Vector2(89, 486)

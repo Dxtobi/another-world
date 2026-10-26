@@ -1,0 +1,499 @@
+[gd_scene format=3 uid="uid://dp04c3bmw8x3j"]
+
+[ext_resource type="Texture2D" uid="uid://w41gdk35f8i8" path="res://sprites/kaijubeast/lizard_g202.png" id="1_72g7e"]
+[ext_resource type="Script" uid="uid://ch5465obb0jy0" path="res://scenes/common-enemies/beast_kaiju.gd" id="1_rvone"]
+[ext_resource type="Script" uid="uid://bh004kqecj1ka" path="res://scripts/bone_line.gd" id="2_6n6to"]
+[ext_resource type="Texture2D" uid="uid://c4lthakw0te5o" path="res://sprites/kaijubeast/lizard_g205.png" id="2_8yuq0"]
+[ext_resource type="Texture2D" uid="uid://pgannl1u3cat" path="res://sprites/kaijubeast/lizard_g206.png" id="3_wvvhl"]
+[ext_resource type="Texture2D" uid="uid://c83u0nqt4gow2" path="res://sprites/kaijubeast/lizard_g207.png" id="4_2sygj"]
+[ext_resource type="Texture2D" uid="uid://iajqgk7x4hv4" path="res://sprites/kaijubeast/lizard_g208.png" id="5_xl16k"]
+[ext_resource type="Texture2D" uid="uid://rdpscofhytbm" path="res://sprites/kaijubeast/lizard_g209.png" id="6_6n6to"]
+[ext_resource type="Texture2D" uid="uid://caci63b68q0xp" path="res://sprites/kaijubeast/lizard_g210.png" id="7_rvone"]
+[ext_resource type="Texture2D" uid="uid://di50sbdlin082" path="res://sprites/kaijubeast/lizard_g305.png" id="8_ue75k"]
+[ext_resource type="Texture2D" uid="uid://burnm0yyw5224" path="res://sprites/kaijubeast/lizard_g304.png" id="9_wan6l"]
+[ext_resource type="Texture2D" uid="uid://duynveb67vx0q" path="res://sprites/kaijubeast/lizard_g307.png" id="10_1phyp"]
+[ext_resource type="Texture2D" uid="uid://cx1u1k6f1n31v" path="res://sprites/kaijubeast/lizard_g308.png" id="11_ytl55"]
+[ext_resource type="Texture2D" uid="uid://fx41pl68kp37" path="res://sprites/kaijubeast/lizard_path128.png" id="12_jo2nl"]
+[ext_resource type="Texture2D" uid="uid://ddc32nv7o4njw" path="res://sprites/kaijubeast/lizard_path130.png" id="13_tud4e"]
+[ext_resource type="Texture2D" uid="uid://dt3k5m2qk5dr1" path="res://sprites/kaijubeast/lizard_path211.png" id="14_b0adt"]
+[ext_resource type="Texture2D" uid="uid://bsublkegboirl" path="res://sprites/kaijubeast/lizard_path210.png" id="15_a5f5u"]
+[ext_resource type="Script" uid="uid://c20kgrku2joaj" path="res://addons/soupik/modifications/soup_bone.gd" id="16_8yuq0"]
+[ext_resource type="Script" uid="uid://bnso0mph1tb11" path="res://addons/soupik/modifications/soup_two_bone_ik.gd" id="17_2sygj"]
+[ext_resource type="Script" uid="uid://cpqcq7meh305c" path="res://addons/soupik/modifications/soup_fabrik.gd" id="17_xl16k"]
+[ext_resource type="Script" uid="uid://b5uiivwxcoics" path="res://addons/soupik/modifications/soup_bone_control.gd" id="18_xl16k"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_puuf6"]
+radius = 46.09772
+
+[sub_resource type="Curve" id="Curve_rvone"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(0.5, 0.5442857), 0.0, 0.0, 0, 0, Vector2(1, 0.17142858), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="Animation" id="Animation_6n6to"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Skeleton2D/toso-midle_bone/section-2_bone/section-1_bone/upper-head_bone/lower-head_bone:target_rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Skeleton2D/toso-midle_bone/toso-midle:modulate")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(0.33728677, 0.00031525642, 0.4151199, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_rvone"]
+resource_name = "attack"
+loop_mode = 2
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Skeleton2D/toso-midle_bone/toso-midle:modulate")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.4),
+"transitions": PackedFloat32Array(1, 0.5),
+"update": 0,
+"values": [Color(0.33728677, 0.00031525642, 0.4151199, 1), Color(0.5855978, 0.0010307682, 0.71363086, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_ue75k"]
+resource_name = "bite"
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Skeleton2D/toso-midle_bone/section-2_bone/section-1_bone/upper-head_bone/lower-head_bone:target_rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.2, 0.4),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, -0.7452555906015785, 0.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Skeleton2D/toso-midle_bone/toso-midle:modulate")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.2048493, 0.3990571),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Color(0.33728677, 0.00031525642, 0.4151199, 1), Color(0.5855978, 0.0010307682, 0.71363086, 1), Color(0.39061797, 0.00042109593, 0.47788358, 1)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_wan6l"]
+_data = {
+&"RESET": SubResource("Animation_6n6to"),
+&"attack": SubResource("Animation_rvone"),
+&"bite": SubResource("Animation_ue75k")
+}
+
+[node name="beast-kaiju" type="CharacterBody2D" unique_id=111958141 node_paths=PackedStringArray("foot_targets") groups=["enemy"]]
+script = ExtResource("1_rvone")
+foot_targets = [NodePath("body/Rig/backleg_ankle-left-leg"), NodePath("body/Rig/backleg_ankle-1")]
+move_speed = 600.0
+step_distance = 50.0
+step_height = 20.0
+debug_draw = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1843388200]
+visible = false
+position = Vector2(148, 7)
+shape = SubResource("CircleShape2D_puuf6")
+
+[node name="body" type="Node2D" parent="." unique_id=909017676]
+
+[node name="Rig" type="Node2D" parent="body" unique_id=1051392190]
+
+[node name="head" type="Node2D" parent="body/Rig" unique_id=1757576182 node_paths=PackedStringArray("target_node", "joint_one_bone_node", "joint_two_bone_node")]
+position = Vector2(18, 10)
+script = ExtResource("17_2sygj")
+flip_bend_direction = true
+target_node = NodePath("../head2")
+joint_one_bone_node = NodePath("../../Skeleton2D/toso-midle_bone/section-2_bone/section-1_bone/upper-head_bone")
+joint_two_bone_node = NodePath("../../Skeleton2D/toso-midle_bone/section-2_bone/section-1_bone/upper-head_bone")
+metadata/_custom_type_script = "uid://bnso0mph1tb11"
+
+[node name="tail" type="Marker2D" parent="body/Rig" unique_id=1838828048]
+position = Vector2(475, 10)
+
+[node name="backleg_ankle-left-leg" type="Marker2D" parent="body/Rig" unique_id=2101115516]
+position = Vector2(211, 23)
+
+[node name="left-leg" type="RayCast2D" parent="body/Rig/backleg_ankle-left-leg" unique_id=221782955]
+target_position = Vector2(-24, 34)
+
+[node name="backleg_ankle-1" type="Marker2D" parent="body/Rig" unique_id=182798260]
+position = Vector2(146, 23)
+
+[node name="right-leg" type="RayCast2D" parent="body/Rig/backleg_ankle-1" unique_id=1843335525]
+target_position = Vector2(-24, 34)
+
+[node name="head2" type="Marker2D" parent="body/Rig" unique_id=121417708]
+position = Vector2(16, 4)
+
+[node name="backleg-left" type="Node2D" parent="body/Rig" unique_id=2118797834 node_paths=PackedStringArray("target_node", "joint_one_bone_node", "joint_two_bone_node")]
+script = ExtResource("17_2sygj")
+flip_bend_direction = true
+target_node = NodePath("../backleg_ankle-left-leg")
+joint_one_bone_node = NodePath("../../Skeleton2D/toso-midle_bone/leg-left_bone")
+joint_two_bone_node = NodePath("../../Skeleton2D/toso-midle_bone/leg-left_bone/leg-left-shine_bone")
+metadata/_custom_type_script = "uid://bnso0mph1tb11"
+
+[node name="backleg-soup-1" type="Node2D" parent="body/Rig" unique_id=824874659 node_paths=PackedStringArray("target_node", "joint_one_bone_node", "joint_two_bone_node")]
+script = ExtResource("17_2sygj")
+flip_bend_direction = true
+target_node = NodePath("../backleg_ankle-1")
+joint_one_bone_node = NodePath("../../Skeleton2D/toso-midle_bone/leg-left2_bone")
+joint_two_bone_node = NodePath("../../Skeleton2D/toso-midle_bone/leg-left2_bone/leg-left-shine_bone")
+metadata/_custom_type_script = "uid://bnso0mph1tb11"
+
+[node name="backleg-soup-1-1" type="Node2D" parent="body/Rig" unique_id=736569337 node_paths=PackedStringArray("bone_node", "target_node")]
+script = ExtResource("18_xl16k")
+control_rotation = true
+bone_node = NodePath("../../Skeleton2D/toso-midle_bone/leg-left2_bone/leg-left-shine_bone/clow_bone")
+target_node = NodePath("../backleg_ankle-1")
+metadata/_custom_type_script = "uid://b5uiivwxcoics"
+
+[node name="backleg-left2" type="Node2D" parent="body/Rig" unique_id=1007184982 node_paths=PackedStringArray("bone_node", "target_node")]
+script = ExtResource("18_xl16k")
+control_rotation = true
+bone_node = NodePath("../../Skeleton2D/toso-midle_bone/leg-left_bone/leg-left-shine_bone/clow_bone")
+target_node = NodePath("../backleg_ankle-left-leg")
+metadata/_custom_type_script = "uid://b5uiivwxcoics"
+
+[node name="SoupFABRIK" type="Node2D" parent="body/Rig" unique_id=754945522 node_paths=PackedStringArray("chain_root", "chain_tip", "target_node")]
+script = ExtResource("17_xl16k")
+chain_root = NodePath("../../Skeleton2D/toso-midle_bone/section-4_bone/section-5_bone")
+chain_tip = NodePath("../../Skeleton2D/toso-midle_bone/section-4_bone/section-5_bone/section-6_bone/section-7_bone/section-8_bone/section-9_bone")
+target_node = NodePath("../tail")
+metadata/_custom_type_script = "uid://cpqcq7meh305c"
+
+[node name="Skeleton2D" type="Skeleton2D" parent="body" unique_id=2040206627]
+modulate = Color(0.5547623, 0.00022265286, 0.5547584, 1)
+
+[node name="toso-midle_bone" type="Bone2D" parent="body/Skeleton2D" unique_id=925326267]
+position = Vector2(137, -2)
+rest = Transform2D(1, 0, 0, 1, 137, -2)
+script = ExtResource("16_8yuq0")
+transform_mode = 0
+target_position = Vector2(137, -2)
+
+[node name="toso-midle" type="Sprite2D" parent="body/Skeleton2D/toso-midle_bone" unique_id=495685877]
+modulate = Color(0.33728677, 0.00031525642, 0.4151199, 1)
+texture_filter = 1
+texture = ExtResource("10_1phyp")
+offset = Vector2(0, -14)
+
+[node name="leg-left2_bone" type="Bone2D" parent="body/Skeleton2D/toso-midle_bone" unique_id=409637904]
+z_index = -1
+position = Vector2(-17, -17)
+rotation = -0.08011133
+rest = Transform2D(0.9967928, -0.080025665, 0.080025665, 0.9967928, -17, -17)
+script = ExtResource("16_8yuq0")
+transform_mode = 0
+target_rotation = -0.080111325
+target_position = Vector2(-17, -17)
+
+[node name="leg-left-shine_bone" type="Bone2D" parent="body/Skeleton2D/toso-midle_bone/leg-left2_bone" unique_id=1450601455]
+position = Vector2(64, -36)
+rotation = -0.045014672
+rest = Transform2D(0.998987, -0.044999473, 0.044999473, 0.998987, 64, -36)
+script = ExtResource("16_8yuq0")
+transform_mode = 0
+target_rotation = -0.045014672
+target_position = Vector2(64, -36)
+
+[node name="clow_bone" type="Bone2D" parent="body/Skeleton2D/toso-midle_bone/leg-left2_bone/leg-left-shine_bone" unique_id=1563575081]
+position = Vector2(-45, 78)
+rotation = 0.125126
+rest = Transform2D(0.99218196, 0.12479975, -0.12479975, 0.99218196, -45, 78)
+auto_calculate_length_and_angle = false
+length = 42.708
+bone_angle = 125.21698
+script = ExtResource("16_8yuq0")
+transform_mode = 0
+target_rotation = 0.125126
+target_position = Vector2(-45, 78)
+
+[node name="clow" type="Sprite2D" parent="body/Skeleton2D/toso-midle_bone/leg-left2_bone/leg-left-shine_bone/clow_bone" unique_id=18180402]
+position = Vector2(0, 7.6293945e-06)
+scale = Vector2(1.0000303, 1.0000267)
+texture = ExtResource("15_a5f5u")
+offset = Vector2(-22, 11.5)
+
+[node name="leg-left-shine" type="Sprite2D" parent="body/Skeleton2D/toso-midle_bone/leg-left2_bone/leg-left-shine_bone" unique_id=832735781]
+scale = Vector2(1.0000007, 1.0000007)
+texture = ExtResource("14_b0adt")
+offset = Vector2(-23, 37.5)
+
+[node name="leg-left2" type="Sprite2D" parent="body/Skeleton2D/toso-midle_bone/leg-left2_bone" unique_id=1291559343]
+modulate = Color(0.34407577, 0.34407574, 0.34407574, 1)
+z_index = -1
+texture_filter = 1
+scale = Vector2(0.9999907, 0.9999907)
+texture = ExtResource("13_tud4e")
+offset = Vector2(21, -10)
+
+[node name="section-2_bone" type="Bone2D" parent="body/Skeleton2D/toso-midle_bone" unique_id=744326356]
+position = Vector2(-52, 2)
+rotation = 0.104606405
+scale = Vector2(0.99999857, 0.99999857)
+rest = Transform2D(0.9852985, -0.1708409, 0.1708409, 0.9852985, -52, 2)
+script = ExtResource("16_8yuq0")
+transform_mode = 0
+target_rotation = 0.1046064
+target_position = Vector2(-52, 2)
+
+[node name="section-1_bone" type="Bone2D" parent="body/Skeleton2D/toso-midle_bone/section-2_bone" unique_id=1917627796]
+position = Vector2(-33, 8)
+rotation = 0.24778824
+scale = Vector2(0.99999917, 0.99999917)
+rest = Transform2D(0.8704744, 0.49221325, -0.49221325, 0.8704744, -33, 8)
+script = ExtResource("16_8yuq0")
+transform_mode = 0
+target_rotation = 0.24778825
+target_position = Vector2(-33, 8)
+
+[node name="upper-head_bone" type="Bone2D" parent="body/Skeleton2D/toso-midle_bone/section-2_bone/section-1_bone" unique_id=502499963]
+z_index = 1
+position = Vector2(-31, 2)
+rotation = -0.40634352
+scale = Vector2(0.99999905, 0.99999905)
+rest = Transform2D(0.9980957, -0.06168291, 0.06168291, 0.9980957, -31, 2)
+script = ExtResource("16_8yuq0")
+transform_mode = 0
+target_rotation = -0.40634352
+target_position = Vector2(-31, 2)
+
+[node name="lower-head_bone" type="Bone2D" parent="body/Skeleton2D/toso-midle_bone/section-2_bone/section-1_bone/upper-head_bone" unique_id=1827849383]
+position = Vector2(-6, 8)
+scale = Vector2(0.99999875, 0.99999875)
+rest = Transform2D(1, 0, 0, 1, -6, 8)
+auto_calculate_length_and_angle = false
+length = 35.0
+bone_angle = 167.09097
+script = ExtResource("16_8yuq0")
+transform_mode = 0
+target_position = Vector2(-6, 8)
+
+[node name="lower-head" type="Sprite2D" parent="body/Skeleton2D/toso-midle_bone/section-2_bone/section-1_bone/upper-head_bone/lower-head_bone" unique_id=325542506]
+texture_filter = 1
+position = Vector2(-9.536743e-07, 0)
+scale = Vector2(0.9999843, 0.9999843)
+texture = ExtResource("12_jo2nl")
+offset = Vector2(-19, 4)
+
+[node name="upper-head" type="Sprite2D" parent="body/Skeleton2D/toso-midle_bone/section-2_bone/section-1_bone/upper-head_bone" unique_id=645952220]
+texture_filter = 1
+position = Vector2(1.9073486e-06, -7.1525574e-07)
+scale = Vector2(0.9999237, 0.9999237)
+texture = ExtResource("8_ue75k")
+offset = Vector2(-21, 1)
+
+[node name="eyes" type="Sprite2D" parent="body/Skeleton2D/toso-midle_bone/section-2_bone/section-1_bone/upper-head_bone/upper-head" unique_id=145940658]
+modulate = Color(0, 1, 0, 1)
+texture_filter = 1
+position = Vector2(-19.5, -3.5)
+texture = ExtResource("9_wan6l")
+
+[node name="eyes2" type="Sprite2D" parent="body/Skeleton2D/toso-midle_bone/section-2_bone/section-1_bone/upper-head_bone/upper-head" unique_id=287605115]
+modulate = Color(0, 1, 0, 1)
+texture_filter = 1
+position = Vector2(-24.5, 0.5)
+texture = ExtResource("9_wan6l")
+
+[node name="section-1" type="Sprite2D" parent="body/Skeleton2D/toso-midle_bone/section-2_bone/section-1_bone" unique_id=1448278784]
+texture_filter = 1
+position = Vector2(7.6293945e-06, -3.8146973e-06)
+scale = Vector2(1.0000348, 1.0000348)
+texture = ExtResource("1_72g7e")
+offset = Vector2(-23, 5)
+
+[node name="section-2" type="Sprite2D" parent="body/Skeleton2D/toso-midle_bone/section-2_bone" unique_id=1795477638]
+texture_filter = 1
+scale = Vector2(1.0000004, 1.0000004)
+texture = ExtResource("11_ytl55")
+offset = Vector2(-16, -11)
+
+[node name="section-4_bone" type="Bone2D" parent="body/Skeleton2D/toso-midle_bone" unique_id=354225697]
+position = Vector2(51, 2)
+rest = Transform2D(1, 0, 0, 1, 51, 2)
+script = ExtResource("16_8yuq0")
+transform_mode = 0
+target_position = Vector2(51, 2)
+
+[node name="section-5_bone" type="Bone2D" parent="body/Skeleton2D/toso-midle_bone/section-4_bone" unique_id=568663282]
+position = Vector2(27, 9)
+rotation = -0.7462725
+scale = Vector2(0.9999997, 0.9999997)
+rest = Transform2D(0.77213514, -0.63545835, 0.63545835, 0.77213514, 27, 9)
+script = ExtResource("16_8yuq0")
+transform_mode = 0
+target_rotation = -0.74627244
+target_position = Vector2(27, 9)
+
+[node name="section-6_bone" type="Bone2D" parent="body/Skeleton2D/toso-midle_bone/section-4_bone/section-5_bone" unique_id=1761294795]
+position = Vector2(44, 41)
+rotation = 0.8135253
+scale = Vector2(0.9999997, 0.9999997)
+rest = Transform2D(0.68694067, 0.7267134, -0.7267134, 0.68694067, 44, 41)
+script = ExtResource("16_8yuq0")
+transform_mode = 0
+target_rotation = 0.8135254
+target_position = Vector2(44, 41)
+
+[node name="section-7_bone" type="Bone2D" parent="body/Skeleton2D/toso-midle_bone/section-4_bone/section-5_bone/section-6_bone" unique_id=962131922]
+position = Vector2(63, -4)
+rotation = -0.12393868
+scale = Vector2(0.9999984, 0.9999984)
+rest = Transform2D(0.9923291, -0.12362217, 0.12362217, 0.9923291, 63, -4)
+script = ExtResource("16_8yuq0")
+transform_mode = 0
+target_rotation = -0.12393867
+target_position = Vector2(63, -4)
+
+[node name="section-8_bone" type="Bone2D" parent="body/Skeleton2D/toso-midle_bone/section-4_bone/section-5_bone/section-6_bone/section-7_bone" unique_id=1791361205]
+position = Vector2(33, 2)
+rotation = -0.104616545
+scale = Vector2(0.99999964, 0.99999964)
+rest = Transform2D(0.99453264, -0.10442602, 0.10442602, 0.99453264, 33, 2)
+script = ExtResource("16_8yuq0")
+transform_mode = 0
+target_rotation = -0.104616545
+target_position = Vector2(33, 2)
+
+[node name="section-9_bone" type="Bone2D" parent="body/Skeleton2D/toso-midle_bone/section-4_bone/section-5_bone/section-6_bone/section-7_bone/section-8_bone" unique_id=1999685191]
+position = Vector2(42, 7)
+rotation = 0.24319962
+scale = Vector2(0.9999996, 0.9999996)
+rest = Transform2D(0.9705723, 0.24080987, -0.24080987, 0.9705723, 42, 7)
+auto_calculate_length_and_angle = false
+length = 49.062
+bone_angle = -4.472
+script = ExtResource("16_8yuq0")
+transform_mode = 0
+target_rotation = 0.24319962
+target_position = Vector2(42, 7)
+
+[node name="section-9" type="Sprite2D" parent="body/Skeleton2D/toso-midle_bone/section-4_bone/section-5_bone/section-6_bone/section-7_bone/section-8_bone/section-9_bone" unique_id=258284875]
+position = Vector2(0, -7.6293945e-06)
+scale = Vector2(1.0019289, 1.0020505)
+texture = ExtResource("7_rvone")
+offset = Vector2(25.5, -0.5)
+
+[node name="section-8" type="Sprite2D" parent="body/Skeleton2D/toso-midle_bone/section-4_bone/section-5_bone/section-6_bone/section-7_bone/section-8_bone" unique_id=778677909]
+position = Vector2(0, 7.6293945e-06)
+scale = Vector2(1.001382, 1.001382)
+texture = ExtResource("6_6n6to")
+offset = Vector2(20.5, -0.5)
+
+[node name="section-7" type="Sprite2D" parent="body/Skeleton2D/toso-midle_bone/section-4_bone/section-5_bone/section-6_bone/section-7_bone" unique_id=623178814]
+scale = Vector2(1.0006001, 1.0006001)
+texture = ExtResource("5_xl16k")
+offset = Vector2(13, 0)
+
+[node name="section-6" type="Sprite2D" parent="body/Skeleton2D/toso-midle_bone/section-4_bone/section-5_bone/section-6_bone" unique_id=299448363]
+position = Vector2(0, 1.2397766e-05)
+scale = Vector2(1.000014, 1.000014)
+texture = ExtResource("4_2sygj")
+offset = Vector2(28, 0)
+
+[node name="section-5" type="Sprite2D" parent="body/Skeleton2D/toso-midle_bone/section-4_bone/section-5_bone" unique_id=1029099062]
+scale = Vector2(0.9999839, 0.9999839)
+texture = ExtResource("3_wvvhl")
+offset = Vector2(19, 21)
+
+[node name="section-4" type="Sprite2D" parent="body/Skeleton2D/toso-midle_bone/section-4_bone" unique_id=2057099728]
+texture_filter = 1
+texture = ExtResource("2_8yuq0")
+offset = Vector2(20, -3)
+
+[node name="leg-left_bone" type="Bone2D" parent="body/Skeleton2D/toso-midle_bone" unique_id=370493978]
+position = Vector2(-1, -17)
+rotation = -0.1688148
+rest = Transform2D(0.9857846, -0.16801411, 0.16801411, 0.9857846, -1, -17)
+script = ExtResource("16_8yuq0")
+transform_mode = 0
+target_rotation = -0.1688148
+target_position = Vector2(-1, -17)
+
+[node name="leg-left-shine_bone" type="Bone2D" parent="body/Skeleton2D/toso-midle_bone/leg-left_bone" unique_id=1390922070]
+position = Vector2(64, -36)
+rotation = -0.5552356
+rest = Transform2D(0.84977627, -0.52714354, 0.52714354, 0.84977627, 64, -36)
+script = ExtResource("16_8yuq0")
+transform_mode = 0
+target_rotation = -0.5552356
+target_position = Vector2(64, -36)
+
+[node name="clow_bone" type="Bone2D" parent="body/Skeleton2D/toso-midle_bone/leg-left_bone/leg-left-shine_bone" unique_id=353113777]
+position = Vector2(-45, 78)
+rotation = 0.7240504
+rest = Transform2D(0.7491288, 0.6624244, -0.6624244, 0.7491288, -45.000015, 78)
+auto_calculate_length_and_angle = false
+length = 42.708
+bone_angle = 125.21698
+script = ExtResource("16_8yuq0")
+transform_mode = 0
+target_rotation = 0.7240504
+target_position = Vector2(-45, 78)
+
+[node name="clow" type="Sprite2D" parent="body/Skeleton2D/toso-midle_bone/leg-left_bone/leg-left-shine_bone/clow_bone" unique_id=1822658899]
+texture_filter = 1
+scale = Vector2(1.0000229, 1.0000229)
+texture = ExtResource("15_a5f5u")
+offset = Vector2(-22, 11.5)
+
+[node name="leg-left-shine" type="Sprite2D" parent="body/Skeleton2D/toso-midle_bone/leg-left_bone/leg-left-shine_bone" unique_id=65494024]
+texture_filter = 1
+position = Vector2(0, -1.5258789e-05)
+scale = Vector2(1.0000832, 1.0000832)
+texture = ExtResource("14_b0adt")
+offset = Vector2(-23, 37.5)
+
+[node name="leg-left" type="Sprite2D" parent="body/Skeleton2D/toso-midle_bone/leg-left_bone" unique_id=1821168664]
+texture_filter = 1
+texture = ExtResource("13_tud4e")
+offset = Vector2(21, -10)
+
+[node name="beast-sprite" type="Node2D" parent="body" unique_id=1455336324 groups=["enemy"]]
+position = Vector2(137, -2)
+
+[node name="TailLine" type="Line2D" parent="body/beast-sprite" unique_id=341054480]
+z_index = -1
+points = PackedVector2Array(78, 11, 138.14105, 11.231316, 201.2674, 11.474094, 234.32764, 11.601251, 276.90656, 11.765022, 302.8194, 13.891972)
+width = 35.0
+width_curve = SubResource("Curve_rvone")
+default_color = Color(0.12, 0.05, 0.16, 1)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+script = ExtResource("2_6n6to")
+skeleton_path = NodePath("../../Skeleton2D")
+chain_root_path = NodePath("../../Skeleton2D/toso-midle_bone/section-4_bone/section-5_bone")
+width_head = 35.0
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="body" unique_id=1216192970]
+libraries/ = SubResource("AnimationLibrary_wan6l")
+autoplay = &"attack"
