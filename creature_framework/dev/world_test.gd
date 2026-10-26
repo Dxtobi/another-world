@@ -7,9 +7,9 @@ extends Node2D
 ##     CollisionPolygon2D on a terrain-layer StaticBody2D, via Geometry2D.
 ##   * a vulture is flown into the ground for 7 s; no body point may end up inside.
 ##
-## Phase B - a synthetic level built in code (floor + tower + ceiling with a gap):
+## Phase B - a synthetic level built in code (floor + tower + ceiling + wall hatch):
 ##   * `path_air` routes OVER the tower instead of through it.
-##   * `path_air` threads the ceiling gap when both ends are above the ceiling.
+##   * `path_air` threads the hatch in a floor-to-ceiling dividing wall.
 ##   * `path_surface` runs along the floor top.
 ##
 ## Prints "WORLD SUMMARY ..." and exits non-zero on failure.
@@ -156,16 +156,21 @@ func _phase_synthetic() -> void:
     world.bounds = Rect2(-100.0, -100.0, 1400.0, 800.0)
     world.cell_size = CELL
 
-    # floor | tower | ceiling with a gap at x 640..700
+    # floor | tower | dividing wall with a hatch (x 560..700, y 180..300)
     _platform(PackedVector2Array([
         Vector2(0, 500), Vector2(1200, 500), Vector2(1200, 560), Vector2(0, 560)]))
     _platform(PackedVector2Array([
-        Vector2(500, 260), Vector2(580, 260), Vector2(580, 500), Vector2(500, 500)]))
+        Vector2(450, 260), Vector2(530, 260), Vector2(530, 500), Vector2(450, 500)]))
     _platform(PackedVector2Array([
-        Vector2(0, 60), Vector2(640, 60), Vector2(640, 100), Vector2(0, 100)]))
+        Vector2(0, 60), Vector2(1200, 60), Vector2(1200, 100), Vector2(0, 100)]))
+    # Top of the divider hangs from the ceiling; the bottom rises from the floor. The only
+    # way between the two halves is the hatch between them.
     _platform(PackedVector2Array([
-        Vector2(700, 60), Vector2(1200, 60), Vector2(1200, 100), Vector2(700, 100)]))
+        Vector2(700, 100), Vector2(840, 100), Vector2(840, 180), Vector2(700, 180)]))
+    _platform(PackedVector2Array([
+        Vector2(700, 300), Vector2(840, 300), Vector2(840, 500), Vector2(700, 500)]))
 
+    await get_tree().physics_frame
     await get_tree().physics_frame
     world.attach(self)
     world.bake(Rect2(0.0, 0.0, 1200.0, 600.0))
@@ -173,9 +178,9 @@ func _phase_synthetic() -> void:
     _check_air_route("over the tower",
         Vector2(120.0, 420.0), Vector2(1080.0, 420.0),
         func(p: Vector2) -> bool: return p.y < 260.0)
-    _check_air_route("through the ceiling gap",
-        Vector2(120.0, 30.0), Vector2(1080.0, 30.0),
-        func(p: Vector2) -> bool: return p.x > 600.0 and p.x < 720.0)
+    _check_air_route("through the wall hatch",
+        Vector2(120.0, 420.0), Vector2(1080.0, 420.0),
+        func(p: Vector2) -> bool: return p.x > 700.0 and p.x < 840.0 and p.y > 180.0 and p.y < 300.0)
     _check_surface_route("along the floor top",
         Vector2(120.0, 490.0), Vector2(420.0, 490.0))
 

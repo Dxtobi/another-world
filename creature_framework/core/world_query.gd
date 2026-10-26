@@ -23,12 +23,19 @@ const DEPENETRATE_STEPS := 6
 ## Safety box in world pixels. Outside = solid.
 var bounds: Rect2 = Rect2(0.0, 0.0, 1280.0, 680.0)
 var point_radius: float = 8.0
-## Physics layer(s) that count as terrain. The game puts its platforms on layer 1.
-var solid_mask: int = 1
+## Physics layer(s) that count as terrain for a creature. Layers 1 (playable ground) and 4
+## (the big rock silhouette). The player ignores layer 4 for now; creatures must not fly
+## through it.
+var solid_mask: int = 1 | 4
 var space_state: PhysicsDirectSpaceState2D = null
 
 ## Raster size for the two path grids, in pixels.
 var cell_size: float = 24.0
+## Extra room kept between an air-path cell and terrain, in pixels. A creature is bigger
+## than a point, and a flyer sags below its target altitude, so the air grid is inflated by
+## this and waypoints are never drawn tight against a wall face. Tune per creature size.
+## The surface grid deliberately ignores it: hugging terrain is the whole point of a grip path.
+var path_clearance: float = 34.0
 
 var _point_query: PhysicsPointQueryParameters2D = null
 var _air: AStarGrid2D = null
@@ -185,8 +192,9 @@ func bake(rect: Rect2 = Rect2()) -> void:
     for y in h:
         for x in w:
             var id: Vector2i = Vector2i(x, y)
-            var blocked: bool = solid[y * w + x] == 1
-            _air.set_point_solid(id, blocked)
+            var centre: Vector2 = cell_pos(id)
+            var blocked: bool = is_solid(centre)
+            _air.set_point_solid(id, blocked or _clearance_blocked(centre))
             var walkable: bool = not blocked and _near_solid(solid, w, h, x, y)
             _surface.set_point_solid(id, not walkable)
     _air.update()
@@ -195,6 +203,32 @@ func bake(rect: Rect2 = Rect2()) -> void:
 
 func has_grids() -> bool:
     return _air != null and _surface != null
+
+
+## Baked-grid truth for one cell (not a live physics query). Diagnostics and debug overlays.
+func grid_solid(id: Vector2i) -> bool:
+    if _air == null or not _air.is_in_boundsv(id):
+        return false
+    return _air.is_point_solid(id)
+
+
+## True when the baked grid covers this cell. A* can only use cells inside the bake rect.
+func grid_has(id: Vector2i) -> bool:
+    return _air != null and _air.is_in_boundsv(id)
+
+
+## How many cells the last bake marked solid. Proves the bake actually saw terrain.
+func solid_cells() -> int:
+    if _air == null or _grid_rect.size == Vector2.ZERO:
+        return 0
+    var n: int = 0
+    var w: int = int(ceil(_grid_rect.size.x / cell_size))
+    var h: int = int(ceil(_grid_rect.size.y / cell_size))
+    for y in h:
+        for x in w:
+            if _air.is_point_solid(Vector2i(x, y)):
+                n += 1
+    return n
 
 
 ## World position of a cell's centre. Also the snapped form of any point.
@@ -239,6 +273,16 @@ func _make_grid(w: int, h: int, area: Rect2) -> AStarGrid2D:
     g.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
     g.update()
     return g
+
+
+## True when terrain is within `path_clearance` of a point, in 8 directions.
+func _clearance_blocked(p: Vector2) -> bool:
+    if path_clearance <= 0.0:
+        return false
+    for k in 8:
+        if is_solid_point(p + Vector2.from_angle(TAU * float(k) / 8.0) * path_clearance):
+            return true
+    return false
 
 
 func _near_solid(solid: PackedByteArray, w: int, h: int, x: int, y: int) -> bool:

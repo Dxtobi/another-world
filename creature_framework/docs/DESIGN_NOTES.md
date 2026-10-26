@@ -25,7 +25,7 @@ glide_lift  = clamp(|vel.x| * glide_k, 0, gravity * 0.75)   # stall illusion: sl
 hold        = clamp(dy * hold_k, -hold_cap, hold_cap)      # y-down spring toward goal altitude
 vdamp       = -vel.y * vdrag_k                             # damps the bungee
 g_v         = max(gravity + hold + vdamp - flap_lift - glide_lift, -up_cap)
-thrust      = damp(thrust, max(clamp(-dy/150, 0, 1), hover_thrust), 6.0)   # hover_thrust = 0.38
+thrust      = damp(thrust, max(clamp(-dy/150, 0, 1), hover_thrust), 6.0)   # hover_thrust = 0.85
 wing angle  = PI + sin(flap_phase - lane*0.25) * amp * (0.35 + 0.65*thrust)   # sweeps back/up/down
 ```
 Why the mean lift: with lift only in the pulse, the body rises hard for a few frames, thrust collapses, it falls,
@@ -33,8 +33,10 @@ and repeats — a visible bungee with no stable hover (measured: ±250 px vertic
 saturated hold spring turns hover into a spring settling (<25 px/s residual after ~1 s).
 Sign convention trap: keep every vertical term y-down and ADD `hold`; writing `gravity - hold` inverts the
 spring and pins the creature to the floor while it climbs (this was T0's second bug).
-Hover thrust ~ gravity / (lift_k * 0.85) with the defaults above ≈ 0.85; `hover_thrust` 0.38 plus the spring
-covers the rest, which keeps the pose lively instead of rigid.
+Hover thrust ~ gravity / (lift_k * 0.85) with the defaults above ≈ 0.85. It must be that: at 0.38 the mean lift is
+~400 against gravity 900, so a slow creature cannot station-keep, settles onto the floor and drags its tail
+(found in T3 when waypoints were only 30-60 px above terrain). The hold spring is for correcting error, not for
+carrying the creature's weight in steady state.
 Steering acts on the FRONT point only; gravity/lift on all points, so the body trails into a bank for free.
 
 ## 2b. World query: solids and path grids (implemented in WorldQuery)
@@ -42,9 +44,11 @@ Steering acts on the FRONT point only; gravity/lift on all points, so the body t
 The level is hand-drawn: `StaticBody2D` + `CollisionPolygon2D`. There is no tilemap to read, so the physics space
 is the source of truth and the creature asks it directly.
 
-- **What is solid.** An `intersect_point` query on `solid_mask` (layer 1), filtered to `StaticBody2D`. The type
-  filter is not cosmetic: the player is a `CharacterBody2D` on the same layer in some scenes, so a layer test alone
-  would turn the player into floor. Areas (water) and projectiles never count.
+- **What is solid.** An `intersect_point` query on `solid_mask` (**layers 1 and 4**), filtered to `StaticBody2D`.
+  Layer 1 is the playable ground; layer 4 is the large rock silhouette, which the player currently ignores but
+  creatures must not fly through. The type filter is not cosmetic: the player is a `CharacterBody2D` on the same
+  layer in some scenes, so a layer test alone would turn the player into floor. Areas (water) and projectiles never
+  count.
 - **Safety box.** `bounds` is checked first and anything outside it is solid. With no physics space attached, the
   box alone is the world — that is how the dev scene runs with no level loaded.
 - **resolve(body)**, per point, per tick:
@@ -58,15 +62,48 @@ is the source of truth and the creature asks it directly.
   Velocity is rebuilt from the corrected position, removing only the component into the surface — the body slides,
   it does not bounce.
 - **Grids** (`bake(rect)`): rasterised by asking `is_solid` at each cell centre, not by reading polygons.
-  `air` = non-solid cells. `surface` = non-solid cells with a solid 8-neighbour. `AStarGrid2D`, cell centres via
-  `cell_pos()`, `DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES`. `path_air` / `path_surface` return world-space waypoints and
-  an empty array if either end is blocked or outside the baked rect.
+  `air` = non-solid cells, **inflated by `path_clearance` (34 px)**: a cell is also blocked if any of 8 probes at
+  that radius hits terrain. A creature is bigger than a point, and without inflation A* routes through the single
+  free cell 8 px from a wall face. `surface` = non-solid cells with a solid 8-neighbour and **no inflation** —
+  gripping is supposed to hug terrain. `AStarGrid2D`, cell centres via `cell_pos()`,
+  `DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES`. `path_air` / `path_surface` return world-space waypoints and an empty array
+  if either end is blocked or outside the baked rect. `grid_solid()` / `grid_has()` expose the baked truth for
+  tests and debug overlays.
 - `get_point_position()` returns cell corners in this Godot, so paths use `cell_pos()` (centre) instead — do not
   mix the two or every waypoint is half a cell off.
+- **Bake cost:** inflation makes each cell 9 point queries instead of 1, so bake a rect around the playable area,
+  not the whole safety box, and do it once per level (the drawn platforms are static).
 
-Acceptance numbers (`dev/world_test.tscn`): 2493 lattice samples against an independent polygon oracle with
-**0 mismatches**; a vulture flown into the real ground for 7 s with **0 violations**; air routes over a tower and
-through a ceiling gap and a surface route along a floor, all with 0 solid waypoints.
+Acceptance numbers (`dev/world_test.tscn`): 2467 lattice samples against an independent polygon oracle with
+**0 mismatches** across both drawn polygons; a vulture flown into the real ground for 7 s with **0 violations**;
+air routes over a tower and through a 140x120 px wall hatch and a surface route along a floor, all with 0 solid
+waypoints.
+
+## 2c. Path following and wall feelers (implemented in PathFollower + FlyLocomotor)
+
+`PathFollower` is a planner, not a brain: the brain writes `Intent.goal`, the follower answers "where next".
+
+- **Advance from the HEAD** (`front_point`), because that is the point locomotors steer. Advancing from the centre
+  parked the nose on a waypoint while the body hung a spine-length behind (measured: stuck 40 px short forever).
+- A waypoint is consumed when within `waypoint_reach` (24 px) **or** once the creature has crossed the waypoint's
+  plane along the segment: `(next - wp).dot(from - wp) > 0`. Without the plane test a fast flyer orbits a corner it
+  overshot by more than the reach.
+- Repath every 0.3 s or when the goal moves > 24 px. A spent path does **not** force a replan: `target()` is the
+  goal itself then. Repathing on "spent" ran A* ~40 times a second while the creature hovered on its goal.
+- Snap the start and goal to a cell the **baked** grid can use (`grid_has` + `grid_solid`), not just a free physics
+  point: a point can be free while its cell centre is solid. A goal inside terrain ring-searches up to 5 cells for
+  the nearest usable cell. No grid, or no route, both fall back to the raw goal, so navigation can never freeze a
+  creature.
+- `Creature.steer_is_goal()` tells a locomotor whether the target is a corner or the final goal. FlyLocomotor keeps
+  full speed at corners (slow radius 16) and only brakes for the goal (radius 80). Braking at every 24 px corner
+  bled the forward speed that glide lift depends on, and the flyer sank onto the floor.
+- **Wall feelers**: 3 probes along velocity at 0 and ±30°, 3 cells long, sampled at 0.5/0.75/1.0 of the reach. The
+  centre probe weighs 1.0, the sides 0.6. When blocked, push perpendicular to travel toward whichever side has more
+  free reach (half-cell steps). This is the last-metre reflex for overshoot and gusts, not pathfinding.
+
+Acceptance (`dev/path_test.tscn`): a synthetic slalom that forces UP over wall A and DOWN under wall B →
+over A at `min y 166.5` (wall top 220), under B at `max y 448.1` (wall bottom 380), goal in 13.9 s, closest
+approach 0.2 px, 0 body points in terrain, 150 repaths over 45 s. With no grid the follower returns the raw goal.
 
 ## 3. Grip scoring (T4)
 

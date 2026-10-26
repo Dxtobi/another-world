@@ -6,10 +6,11 @@ A reusable framework for building **many different creatures with many different
 Inspired by the Rain World animation approach (GDC talk "The Rain World Animation Process"): a cheap, stable
 **logic layer** (points + distance constraints) decorated by a heavy **cosmetic layer** that only ever *reads* the logic.
 
-> **Status:** T0, T1 and T2 done. The framework lives inside the *Another World* project (`res://creature_framework/`),
+> **Status:** T0-T3 done. The framework lives inside the *Another World* project (`res://creature_framework/`),
 > runs on Godot 4.7.1, and is verified by a self-terminating 60 s scripted run (0 errors, 0 NaN, bounded speeds,
-> no single-frame pose pops) plus a world harness that checks the real level's drawn polygons and path grids.
-> Steps 1-3 (Body, Intent/Brain, LocoManager, FlyLocomotor, debug view) are implemented; T3 is next.
+> no single-frame pose pops), a world harness that checks the real level's drawn polygons and path grids, and a
+> flight harness that flies a slalom to a goal. Steps 1-3 (Body, Intent/Brain, LocoManager, FlyLocomotor, debug view,
+> world query, path following) are implemented; T4 is next.
 
 Requires **Godot 4.7+** (developed against 4.7.1).
 
@@ -49,6 +50,7 @@ core/
   creature_rig.gd    /
   body.gd            Verlet points + distance constraints (the logic layer)
   world_query.gd     the creature's only view of the level (physics solids + air/surface path grids)
+  path_follower.gd   goal -> next waypoint, with repathing and hole-free fallback
   locomotor.gd       base class: score(), enter(), exit(), emit()
   loco_manager.gd    scoring + hysteresis + weighted crossfade
   move_output.gd     accumulates accelerations and limb targets, scaled by blend weight
@@ -58,13 +60,14 @@ brains/mouse_brain.gd                 debug brain (goal = mouse)
 brains/demo_brain.gd                  scripted brain for reproducible T0 runs
 dev/creature_test.tscn                one creature + HUD; 60 s self-terminating metrics run
 dev/world_test.tscn                   T2 harness: real-level oracle, dive test, path grids (exits non-zero)
-locomotors/fly_locomotor.gd           flight: flap lift + glide lift + steering
+dev/path_test.tscn                    T3 harness: up-and-down slalom flight to a goal (exits non-zero)
+locomotors/fly_locomotor.gd           flight: flap lift + glide lift + path steering + wall feelers
 rigs/vulture_rig.gd                   3-point spine, 2 wings, 2 legs
 docs/DESIGN_NOTES.md                  algorithms and reference code for the remaining tasks
 ```
 
 Per-tick order (in `Creature._physics_process`):
-`brain.think -> loco.update (emit forces) -> body.step -> world.resolve`. Cosmetics run in `_process`.
+`brain.think -> path.update -> loco.update (emit forces) -> body.step -> world.resolve`. Cosmetics run in `_process`.
 
 ### Debug view (dev aid; deleted when T7/T9 art lands)
 Circles and lines only, but it has to carry the read until then:
@@ -118,26 +121,57 @@ Read `docs/DESIGN_NOTES.md` for the algorithms referenced below.
 - **Accept:** `is_solid` matches what is drawn; body points never end up inside a platform; paths exist where
   expected (around a tower, under a ceiling, along an overhang).
 - **Done:** `WorldQuery.attach(node)` binds to the level's physics space and `is_solid` is an
-  `intersect_point` query filtered to `StaticBody2D` on `solid_mask` (layer 1). The type filter matters: the player
-  is a `CharacterBody2D` on the same layer, so a layer test alone would make actors solid. `bounds` remains a safety
-  box (outside = solid), which also keeps the no-level dev scene working.
+  `intersect_point` query filtered to `StaticBody2D` on `solid_mask` (**layers 1 and 4**). Layer 1 is the playable
+  ground; layer 4 is the big hand-drawn rock silhouette, which the player currently ignores but creatures must not
+  fly through. The type filter also matters: the player is a `CharacterBody2D` on layer 1, so a layer test alone
+  would make actors solid. `bounds` remains a safety box (outside = solid), which also keeps the no-level dev
+  scene working.
   `resolve` now sub-samples the tick (max 12 steps, `point_radius/2` apart, so no tunnelling through a drawn
   platform), bisects back to the boundary if a point starts inside, estimates an outward normal from 8 probes, and
   projects velocity onto the tangent — so bodies slide instead of sticking. `bake(rect)` rasterises the air grid
-  (non-solid cells) and the surface grid (free cells with a solid 8-neighbour) from the same queries.
+  and the surface grid (free cells with a solid 8-neighbour) from the same queries. The air grid is **inflated by
+  `path_clearance` (34 px)** so a path never hugs a wall face that a creature's body cannot fit against; the
+  surface grid deliberately is not, because gripping means hugging terrain.
   Verified by `dev/world_test.tscn` (headless, exits non-zero on failure):
-  `oracle samples=2493 mismatches=0`, `dive 7s violations=0`, air path over a tower and through a ceiling gap,
-  surface path along a floor, all with 0 solid waypoints.
+  `oracle samples=2467 mismatches=0` across both drawn polygons, `dive 7s violations=0`, air paths over a tower
+  and through a wall hatch, surface path along a floor, all with 0 solid waypoints.
 
   ```
   godot --headless --path . res://creature_framework/dev/world_test.tscn
   ```
 
-### T3. Path following and obstacle avoidance
+### T3. Path following and obstacle avoidance  ✅ done
 - Add a `PathFollower` helper: advance waypoints at ~24 px, repath every ~0.3 s or when the goal moves > 1 tile.
 - Put the current waypoint into the flow: Locomotors steer toward the *waypoint*, not the raw goal.
 - Add wall avoidance to `FlyLocomotor` (2-3 tile lookups ahead along velocity, +-30 degrees; push away weighted by closeness).
 - **Accept:** click goals behind walls; the creature routes around them smoothly without jitter or wall-hugging.
+- **Done:** `core/path_follower.gd` keeps a path, advances it, and repaths every 0.3 s or when the goal drifts more
+  than 24 px. `Creature.steer_target()` returns the current waypoint; `FlyLocomotor` steers at that instead of
+  `intent.goal`, so the brain still owns the goal and the follower only answers "where next". Locomotors also ask
+  `Creature.steer_is_goal()`: they keep full speed around corners and only brake (80 px slow radius) for the final
+  arrival — braking at every 24 px waypoint bled the forward speed that glide lift depends on, and the flyer sank
+  onto the floor. The follower advances from the **head**, not the centre, because the head is what steers;
+  advancing from the centre parks the nose on a waypoint with the body a spine-length behind. Waypoints are also
+  skipped once their plane is crossed, so a fast flyer cannot orbit an overshot corner. `FlyLocomotor` adds three
+  3-cell feelers along velocity at 0, +30 and -30 degrees; if any is blocked it pushes perpendicular toward the
+  freer side. **Also fixed in T3:** the hover baseline was `0.38`, which gives ~400 px/s² of lift against 900
+  gravity — the flyer could not station-keep and dragged its tail on the floor. `hover_thrust` is now `0.85`
+  (mean flap lift ≈ gravity), so a hovering creature actually holds altitude; the stronger flap raised the
+  measured flap-driven wing-tip peak from ~74 to 85.5 px, with the shoulder anchor stable (7 px from the centre),
+  i.e. still flap speed, not a facing pop.
+  Verified by `dev/path_test.tscn` (headless, exits non-zero on failure): a synthetic level with a floor, a
+  ceiling and two walls that force an up-then-down slalom. The creature climbs **over wall A (min y 166.5 < 220)**
+  and dives **under wall B (max y 448.1 > 380)**, reaches the goal in **13.9 s**, closest approach **0.2 px**,
+  with **0 body points inside terrain** and **150 repaths** over 45 s.
+
+  ```
+  godot --headless --path . res://creature_framework/dev/path_test.tscn
+  ```
+
+  **Still open:** nothing in the game bakes the grid yet, so in-game steering still falls back to the raw goal.
+  The T11 actor shell should build **one** baked `WorldQuery` per level (the drawn platforms are static) and share
+  it across creatures. `path_clearance` is bake-time, so a much larger creature needs its own bake or a larger
+  clearance.
 
 ### T4. LimbSystem: grips
 - Create `core/limb_system.gd`: per limb `gripping`, `grip_pos`, `max_reach`. Implement random-sample grip scoring
@@ -229,7 +263,7 @@ Do this after locomotion (T2-T6) is proven, so the authoring layer is built on a
 - [x] T0 run and fix
 - [x] T1 smooth facing
 - [x] T2 real world (platform grids)
-- [ ] T3 path following and avoidance
+- [x] T3 path following and avoidance
 - [ ] T4 limb grips
 - [ ] T5 climb locomotor
 - [ ] T6 mode switching

@@ -4,6 +4,15 @@ extends Locomotor
 ##   flap lift  = pulses on the downstroke, scaled by thrust
 ##   glide lift = proportional to horizontal speed (fast = holds altitude, slow = sinks / stalls)
 ## Tuning keys (override per creature in rig.tuning): see the c.tune() calls below.
+##
+## Steering aims at `Creature.steer_target()` (the current path waypoint, or the goal when
+## there is no plan) and adds a short wall-avoidance push, so a fast flyer that overshoots a
+## path corner still turns away from terrain instead of grinding into it.
+
+## Half-angle of the three feeler probes used for wall avoidance.
+const WALL_PROBE_ANGLE := deg_to_rad(30.0)
+## How far ahead the feelers reach, in world cells.
+const WALL_PROBE_CELLS := 3.0
 
 
 func _init() -> void:
@@ -13,7 +22,7 @@ func _init() -> void:
 func enter() -> void:
     # Spawn / mode-entry: start at hover effort instead of a gravity gulp.
     if c != null:
-        c.thrust = c.tune(&"fly_hover_thrust", 0.38)
+        c.thrust = c.tune(&"fly_hover_thrust", 0.85)
 
 
 func score(_intent: Intent) -> float:
@@ -37,13 +46,16 @@ func emit(dt: float, intent: Intent, out: MoveOutput) -> void:
     var freq_min: float = c.tune(&"fly_freq_min", 1.5)
     var freq_max: float = c.tune(&"fly_freq_max", 5.0)
     var wing_amp: float = c.tune(&"fly_wing_amp", 1.35)
-    var hover_thrust: float = c.tune(&"fly_hover_thrust", 0.38)   # baseline effort so lift survives the arrive-stop
+    # Baseline effort that actually holds altitude. Mean flap lift is
+    # lift_k * thrust * ~0.85, so 0.85 here balances gravity (900 / (1250 * 0.85)).
+    # A lower baseline makes a slow creature sink and drag along the floor.
+    var hover_thrust: float = c.tune(&"fly_hover_thrust", 0.85)
     var hold_k: float = c.tune(&"fly_hold_k", 14.0)               # spring toward goal altitude (accel per px of error)
     var hold_cap: float = c.tune(&"fly_hold_cap", 1100.0)         # saturation of the hold spring
     var vdrag_k: float = c.tune(&"fly_vdrag_k", 1.4)              # vertical velocity damping (per s) — kills the bungee
     var up_cap: float = c.tune(&"fly_up_cap", 1600.0)             # max upward accel of a single flap burst
 
-    var target: Vector2 = intent.goal if intent.has_goal else b.pos[m]
+    var target: Vector2 = c.steer_target()
     var vel_m: Vector2 = b.velocity(m, dt)
     var vel_f: Vector2 = b.velocity(f, dt)
 
@@ -70,7 +82,11 @@ func emit(dt: float, intent: Intent, out: MoveOutput) -> void:
     g_v = maxf(g_v, -up_cap)          # cap upward burst only; falling accelerates honestly
 
     # Steering acts on the head; the body trails behind through the constraints (gives banking for free).
-    var steer: Vector2 = Steering.arrive(b.pos[f], vel_f, target, max_speed * intent.desired_speed, max_accel * (0.4 + 0.6 * c.thrust))
+    # Brake only for the final arrival. Slowing at every 24 px waypoint bleeds the forward speed
+    # that glide lift depends on, and the creature sinks onto the floor between corners.
+    var slow_radius: float = 80.0 if c.steer_is_goal() else 16.0
+    var steer: Vector2 = Steering.arrive(b.pos[f], vel_f, target, max_speed * intent.desired_speed, max_accel * (0.4 + 0.6 * c.thrust), slow_radius)
+    steer += _avoid_force(b.pos[m], vel_m, max_accel)
 
     var g: Vector2 = Vector2(0.0, g_v)
     out.add_accel(f, steer + g)
@@ -80,6 +96,52 @@ func emit(dt: float, intent: Intent, out: MoveOutput) -> void:
     c.turn_rate = Steering.damp_f(c.turn_rate, clampf((target.x - b.pos[m].x) * 0.01, -1.0, 1.0), 3.0, dt)
 
     _emit_limbs(out, wing_amp)
+
+
+## Short feelers in front of the body: if terrain is ahead, push sideways toward the freer
+## side. This is not pathfinding (the grid already did that) - it is the last-metre reflex
+## for overshoot, gusts and creatures whose turn radius is bigger than a cell.
+func _avoid_force(from: Vector2, vel: Vector2, max_accel: float) -> Vector2:
+    var w: WorldQuery = c.world
+    if w == null:
+        return Vector2.ZERO
+    var speed: float = vel.length()
+    if speed < 24.0:
+        return Vector2.ZERO      # hovering: steering already holds position, save the queries
+    var dir: Vector2 = vel / speed if speed > 1.0 else Vector2(c.facing, 0.0)
+    var reach: float = w.cell_size * WALL_PROBE_CELLS
+
+    var blocked: float = 0.0
+    for k in 3:
+        var off: float = (float(k) - 1.0) * WALL_PROBE_ANGLE
+        if _blocked(w, from, dir.rotated(off), reach):
+            blocked += 1.0 - absf(off) / WALL_PROBE_ANGLE * 0.4   # the centre feeler counts most
+    if blocked <= 0.0:
+        return Vector2.ZERO
+
+    var perp: Vector2 = dir.orthogonal()
+    var plus: float = _free_reach(w, from, perp, reach)
+    var minus: float = _free_reach(w, from, -perp, reach)
+    var side: Vector2 = perp if plus >= minus else -perp
+    return side * max_accel * clampf(blocked / 1.6, 0.0, 1.0)
+
+
+func _blocked(w: WorldQuery, from: Vector2, dir: Vector2, reach: float) -> bool:
+    for f: float in [0.5, 0.75, 1.0]:
+        if w.is_solid_point(from + dir * reach * f):
+            return true
+    return false
+
+
+## Free distance along a direction, in half-cell steps. Used to pick the escape side.
+func _free_reach(w: WorldQuery, from: Vector2, dir: Vector2, reach: float) -> float:
+    var step: float = w.cell_size * 0.5
+    var d: float = step
+    while d < reach:
+        if w.is_solid_point(from + dir * d):
+            return d
+        d += step
+    return reach
 
 
 func _emit_limbs(out: MoveOutput, wing_amp: float) -> void:

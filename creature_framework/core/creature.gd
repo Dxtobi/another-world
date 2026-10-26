@@ -8,6 +8,9 @@ var body: Body
 var brain: Brain
 var loco: LocoManager
 var world: WorldQuery
+## Turns the goal into the next waypoint a locomotor should steer at. Never writes the
+## intent: the brain stays the only thing that decides *where* to go.
+var path: PathFollower = null
 var intent: Intent = Intent.new()
 var out: MoveOutput = MoveOutput.new()
 
@@ -29,6 +32,7 @@ func setup(p_rig: CreatureRig, p_brain: Brain, p_world: WorldQuery, origin: Vect
     world = p_world
     body = Body.new()
     body.setup(rig, origin)
+    path = PathFollower.new(world)
     loco = LocoManager.new()
     loco.setup(self, rig.locomotors)
     limb_tip.resize(rig.limbs.size())
@@ -40,6 +44,10 @@ func _physics_process(dt: float) -> void:
     if body == null:
         return
     brain.think(self, intent, dt)
+    if path != null:
+        # Advance from the HEAD, because that is the point locomotors steer. Advancing from
+        # the centre parks the head on a waypoint while the body hangs a spine-length behind.
+        path.update(body.pos[rig.front_point], intent.goal, intent.has_goal, dt)
     if absf(intent.look_dir.x) > 0.01:
         facing = Steering.damp_f(facing, signf(intent.look_dir.x), tune(&"facing_rate", 9.0), dt)
     out.reset(body.pos.size(), rig.limbs.size())
@@ -59,6 +67,22 @@ func _process(_dt: float) -> void:
 ## Read a per-creature tuning value, falling back to the locomotor's default.
 func tune(key: StringName, default_value: float) -> float:
     return float(rig.tuning.get(key, default_value))
+
+
+## The point a locomotor should steer at this tick: the current path waypoint, or the
+## raw goal when there is no plan (no grids, unreachable goal, or the path is used up).
+## Locomotors call this instead of reading `intent.goal` directly.
+func steer_target() -> Vector2:
+    var fallback: Vector2 = intent.goal if intent.has_goal else body.pos[rig.center_point]
+    if path == null:
+        return fallback
+    return path.target(fallback)
+
+
+## True when steering is aimed at the goal itself, not an intermediate waypoint. Locomotors
+## use this to brake only for the final arrival and keep full speed around corners.
+func steer_is_goal() -> bool:
+    return intent.has_goal and (path == null or path.at_goal())
 
 
 ## Direction of the spine, rear -> front.
@@ -122,6 +146,16 @@ func _draw() -> void:
         else:
             _draw_leg(a, t, col, lm)
             draw_circle(t, 2.5, col)
+
+    if path != null and path.has_path():
+        var col: Color = Color(0.45, 1.0, 0.75, 0.55)
+        var prev: Vector2 = to_local(body.render_pos(rig.front_point, alpha))
+        for i in range(path.index, path.path.size()):
+            var wp: Vector2 = to_local(path.path[i])
+            draw_line(prev, wp, col, 1.0)
+            draw_circle(wp, 2.0, col)
+            prev = wp
+        draw_circle(to_local(steer_target()), 5.0, Color(0.4, 1.0, 0.7, 0.85))
 
     if intent.has_goal:
         draw_circle(to_local(intent.goal), 6.0, Color.RED)
