@@ -6,16 +6,18 @@ A reusable framework for building **many different creatures with many different
 Inspired by the Rain World animation approach (GDC talk "The Rain World Animation Process"): a cheap, stable
 **logic layer** (points + distance constraints) decorated by a heavy **cosmetic layer** that only ever *reads* the logic.
 
-> **Status:** T0-T7 done, plus the editor-authoring layer. The framework lives inside the *Another World*
+> **Status:** T0-T8 done, plus the editor-authoring layer. The framework lives inside the *Another World*
 > project (`res://creature_framework/`), runs on Godot 4.7.1, and is verified by a self-terminating 60 s
 > scripted run (0 errors, 0 NaN, bounded speeds, no single-frame pose pops), a world harness that checks the
 > real level's drawn polygons and path grids, a flight harness that flies a slalom to a goal, a grip harness
 > that latches limbs onto a wall, a climb harness that crawls a wall hand-over-hand and sags with no grips, a
 > mode harness that lands, climbs, launches and refuses to switch when the goal is in open air, an
-> authoring harness that bakes the authored vulture scene back to the exact reference rig, and a depth harness
-> that turns a profile body through a front/back view and swaps near/far exactly once. Steps 1-7 (Body,
-> Intent/Brain, LocoManager, FlyLocomotor, debug view, world query, path following, limb grips, climb
-> locomotor, mode switching, depth layer) and the scene-based rig editor are implemented; T8 (smoothness) is next.
+> authoring harness that bakes the authored vulture scene back to the exact reference rig, a depth harness
+> that turns a profile body through a front/back view and swaps near/far exactly once, and a smoothness harness
+> that proves the tail lags and settles, limb swings are eased arcs, and stretch damps with speed and grip count.
+> Steps 1-8 (Body, Intent/Brain, LocoManager, FlyLocomotor, debug view, world query, path following, limb grips,
+> climb locomotor, mode switching, depth layer, smoothness) and the scene-based rig editor are implemented;
+> T9 (cosmetics) is next.
 
 Requires **Godot 4.7+** (developed against 4.7.1).
 
@@ -30,6 +32,9 @@ locomotor, both blend weights, the grip count and the current phase.
 For the T7 depth read, open `creature_framework/dev/depth_demo.tscn` and press F6: the vulture flies between a
 left and a right goal, so every crossing is a turnaround through edge-on. The HUD shows yaw, squash, facing and
 the current near/far draw order; **T** flips the goal now and **S** toggles slow motion.
+For the T8 smoothness read, open `creature_framework/dev/smooth_demo.tscn` and press F6: the same crossings now
+show the tail lagging and swinging, the eased leg arcs and the body stretching along its spine at speed. The HUD
+prints speed, stretch and tail sway; **T** flips the goal and **S** toggles slow motion.
 To author a creature, open `creature_framework/creatures/vulture.tscn`: the rig is a normal scene, and the
 **Validate rig** button in the inspector checks it before anything runs.
 To *try* a rig without touching code, open `creature_framework/dev/playground.tscn`, set its `rig_scene`
@@ -75,6 +80,7 @@ core/
   move_output.gd     accumulates accelerations and limb targets, scaled by blend weight
   steering.gd        arrive(), damp_f(), damp_v()
   depth.gd           T7 cosmetic 2.5D: yaw, squash, per-part depth, scale/tint/z helpers
+  secondary.gd       T8 cosmetic follow chain (tail/feathers): Verlet + spring + exact segments
   creature.gd        glue node + proxy variables + debug draw
 brains/mouse_brain.gd                 debug brain (goal = mouse)
 brains/demo_brain.gd                  scripted brain for reproducible T0 runs
@@ -97,6 +103,8 @@ dev/mode_test.tscn                    T6 harness: land/climb/launch, flight-only
 dev/mode_demo.tscn                    T6 live demo: wall vs open-air goal, mode HUD + path overlay
 dev/depth_test.tscn                   T7 harness: turn sweep, draw-order swap, step lift, live facing (exits non-zero)
 dev/depth_demo.tscn                   T7 live demo: left/right goals, yaw/squash/draw-order HUD, T turn, S slow
+dev/smooth_test.tscn                  T8 harness: chain lag/settle, eased arcs, stretch, live sway (exits non-zero)
+dev/smooth_demo.tscn                  T8 live demo: tail, eased legs, spine stretch HUD, T turn, S slow
 dev/authoring_test.tscn               authoring harness: scene bake, mutation, validation, runtime (exits non-zero)
 dev/playground.tscn                   no-code playground: exported rig scene + mouse goal + R rebuild
 locomotors/fly_locomotor.gd           flight: flap lift + glide lift + path steering + wall feelers
@@ -116,6 +124,12 @@ Circles and lines only, but it has to carry the read until then:
   `base_depth`). Far parts draw before the body hull and are darker/smaller; near parts draw after it. During a
   turnaround both sides cross zero at edge-on, so the order swaps once, smoothly. The whole creature is also
   squashed horizontally around its centre by `abs(cos(yaw))`, never below 0.15, which is the front/back view.
+- **Stretch**: at speed the body elongates along its spine by up to 9 % and narrows across it by up to 5 %;
+  a climber missing grips sags into the same axis. Damped, composed with the squash, never below a zero scale.
+- **Tail**: a five-segment cosmetic chain on the rear point with a small feather fan. It lags and swings through a
+  turn, trails further behind at speed and droops under its own weight. The logic never reads it.
+- **Eased limbs**: a stepping leg's drawn tip follows a smoothstep arc (ease in/out, bowed away from the shoulder),
+  then lands exactly on the logic target; grips use a short arc so the limb meets the dot. Wings stay direct.
 - **Body**: a tapered hull through the three spine points plus a head disc, so limbs have something to attach to.
 - **Wing**: leading edge (shoulder → tip), a trailing edge swept back in the body frame, and 3 feather ribs.
   A single `presentation` scalar widens the chord *and* shortens the span, so the wing is broad when it faces the
@@ -328,13 +342,33 @@ Read `docs/DESIGN_NOTES.md` for the algorithms referenced below.
   godot --headless --path . res://creature_framework/dev/depth_test.tscn
   ```
 
-### T8. Smoothness pass
-- Everything driven through `damp_*`. Secondary motion: Verlet chains for tails/feathers/dangly bits (cosmetic only).
-  Eased limb arcs (ease in/out, never linear). Squash/stretch tied to grip count and speed.
+### T8. Smoothness pass: secondary motion, eased arcs, stretch ✅ done
+- `core/secondary.gd`: `CosmeticChain`, a five-point Verlet follow chain for tails/feathers/dangly bits. The root
+  is pinned to the interpolated rear point; every segment is pulled toward a rest pose one segment behind its
+  parent, then a two-pass root→tip distance solve keeps every segment at exactly `seg_len`. Spring and drag are in
+  seconds (`exp(-drag * dt)`, `min(dt, 0.0333)`), so a 30 Hz and a 144 Hz display settle identically. The rest
+  direction blends spine-back, a pull behind travel and a droop.
+- `core/depth.gd`: `stretch` (0..1) is damped from normalized speed (weight **0.75**) and missing-grip hang
+  (weight **0.90**). It deforms the body about its centre on the spine axis by `1 + stretch * 0.09` and across it
+  by `1 - stretch * 0.05`, composed after the depth squash. `stretch_point()`/`stretch_vector()` are the position
+  and direction forms.
+- `core/creature.gd`: a stepping leg's **drawn** tip follows a smoothstep arc (`t²(3−2t)`, bowed away from the
+  shoulder, 0.08–0.26 s); a grip uses a ≤0.10 s arc so the limb meets the dot, and wings stay direct. The logic
+  `limb_tip`, grips and `Body` are untouched. `_process` advances stretch, eased tips and the tail at render rate;
+  `_draw` uses the eased tips and the stretched view.
 - For any **node-based** cosmetics (Sprite2D/Line2D/Polygon2D following logic), enable 2D physics interpolation
   (Project Settings > Physics > Common > Physics Interpolation, Godot 4.3+). The debug view already interpolates
   manually through `Body.render_pos()`.
-- **Accept:** no visible stepping at 60/120/144 Hz refresh; no sudden pose changes anywhere.
+- **Accept:** `dev/smooth_test.tscn` passes 53 checks: the chain lags **12.65 px** behind a moving anchor, keeps
+  **9.00 px** segments, survives a teleport and settles to **0.000 px**; a 140 px leg swing bows **16.0 px** off
+  the chord, sits at **72.7 px** at half time and lands exactly on target, with a **0.080 s** grip arc; full speed
+  gives **0.75** stretch (`1.067 / 0.963`), no grips sag to **0.90**, and the first frame moves only **0.071**.
+  A live run stays finite with **31.7 px** tail sway and **0.18** max stretch. `dev/smooth_demo.tscn` shows the
+  tail, eased legs and spine stretch live (`T` turn, `S` slow motion).
+
+  ```
+  godot --headless --path . res://creature_framework/dev/smooth_test.tscn
+  ```
 
 ### T9. Cosmetics layer + off-screen switch
 - `Cosmetics` node (child of Creature) that only reads `Creature` and `Body`: wing sprites/polygons driven by
@@ -473,6 +507,6 @@ scene-loaded rig.
 - [x] T6 mode switching
 - [x] Editor authoring (scene rigs, registries, validation)
 - [x] T7 depth layer
-- [ ] T8 smoothness pass
+- [x] T8 smoothness pass
 - [ ] T9 cosmetics and off-screen switch
 - [ ] T10 second creature

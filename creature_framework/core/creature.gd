@@ -19,6 +19,12 @@ var out: MoveOutput = MoveOutput.new()
 var depth_layer: DepthLayer = DepthLayer.new()
 ## Per-limb hidden step height (0..1). Cosmetic; drives the raised foot + shrunken shadow.
 var step_lift: PackedFloat32Array = PackedFloat32Array()
+## Cosmetic eased tip per limb. A stepping leg lags and bows through an arc; a wing keeps
+## the direct tip (its flap is already smooth). Never read by logic.
+var limb_view_tip: PackedVector2Array = PackedVector2Array()
+## Cosmetic tail chain, attached to the rear point. Reads the body, writes only itself.
+var tail: CosmeticChain = CosmeticChain.new()
+var show_tail: bool = true
 
 # Proxy variables: written by locomotors, read by cosmetics. Never the other way round.
 var thrust: float = 0.0
@@ -30,6 +36,19 @@ var facing: float = 1.0
 var limb_tip: PackedVector2Array = PackedVector2Array()
 
 var debug_draw: bool = true
+
+## Distance below which the eased limb tip is considered arrived.
+const LIMB_SWING_EPS: float = 1.0
+
+var _swing_from: PackedVector2Array = PackedVector2Array()
+var _swing_to: PackedVector2Array = PackedVector2Array()
+var _swing_bow: PackedVector2Array = PackedVector2Array()
+var _swing_t: PackedFloat32Array = PackedFloat32Array()
+var _swing_dur: PackedFloat32Array = PackedFloat32Array()
+## Last physics step, for a px/s speed at render rate.
+var _logic_dt: float = 1.0 / 60.0
+## Spine axis used by the render transform, set once per `_draw()`.
+var _draw_axis: Vector2 = Vector2.RIGHT
 
 
 func setup(p_rig: CreatureRig, p_brain: Brain, p_world: WorldQuery, origin: Vector2) -> void:
@@ -48,12 +67,29 @@ func setup(p_rig: CreatureRig, p_brain: Brain, p_world: WorldQuery, origin: Vect
         limb_tip[i] = anchor_pos(i)
     step_lift.resize(rig.limbs.size())
     step_lift.fill(0.0)
+    limb_view_tip.resize(rig.limbs.size())
+    _swing_from.resize(rig.limbs.size())
+    _swing_to.resize(rig.limbs.size())
+    _swing_bow.resize(rig.limbs.size())
+    _swing_t.resize(rig.limbs.size())
+    _swing_dur.resize(rig.limbs.size())
+    for i in rig.limbs.size():
+        limb_view_tip[i] = limb_tip[i]
+        _swing_from[i] = limb_tip[i]
+        _swing_to[i] = limb_tip[i]
+        _swing_bow[i] = Vector2.ZERO
+        _swing_t[i] = 1.0
+        _swing_dur[i] = 0.1
+    var spine_len: float = rig.points[rig.front_point].offset.distance_to(
+        rig.points[rig.rear_point].offset)
+    tail.setup(5, body.pos[rig.rear_point], -spine_dir(), clampf(spine_len * 0.11, 6.0, 12.0))
     depth_layer.reset(facing)
 
 
 func _physics_process(dt: float) -> void:
     if body == null:
         return
+    _logic_dt = maxf(dt, 0.0001)
     brain.think(self, intent, dt)
     if path != null:
         # Advance from the HEAD, because that is the point locomotors steer. Advancing from
@@ -81,11 +117,19 @@ func _physics_process(dt: float) -> void:
 func _process(dt: float) -> void:
     if body == null:
         return
-    # Depth is a render-rate cosmetic: smoothing it here keeps the turn free of 60 Hz
-    # stepping even when the physics tick is slower than the display.
+    # Every view value is damped or eased at render rate, so a turn, a step and a change
+    # of speed read the same on a 30 Hz and a 144 Hz display.
     var stepping: bool = loco.current != null and loco.current.id != &"fly"
     _update_step_lift(dt, stepping)
     depth_layer.update(facing, tune(&"yaw_rate", 10.0), dt)
+    var speed: float = body.velocity(rig.center_point, _logic_dt).length()
+    var hang: float = 0.0
+    if stepping and limbs != null and rig.limbs.size() > 0:
+        hang = 1.0 - float(limbs.grip_count()) / float(rig.limbs.size())
+    depth_layer.update_stretch(speed / maxf(tune(&"stretch_speed", 380.0), 1.0), hang,
+        tune(&"stretch_rate", 6.0), dt)
+    _update_limb_views(dt)
+    _update_tail(dt)
     queue_redraw()
 
 
@@ -154,6 +198,95 @@ func _update_step_lift(dt: float, stepping: bool) -> void:
         step_lift[i] = Steering.damp_f(step_lift[i], want, rate, dt)
 
 
+## Smoothstep for a limb swing: zero slope at both ends, so the tip eases out of the old
+## pose and settles into the new one. Never linear.
+static func ease_swing(t: float) -> float:
+    var u: float = clampf(t, 0.0, 1.0)
+    return u * u * (3.0 - 2.0 * u)
+
+
+## Eased tip for stepping limbs. `limb_tip` (and grips) stay logic-exact; this array is
+## only what the view draws. Wings copy their target directly: their flap is already a
+## continuous oscillation, and adding lag would smear the beat instead of smoothing a step.
+func _update_limb_views(dt: float) -> void:
+    if limbs == null:
+        return
+    for i in rig.limbs.size():
+        var target: Vector2 = limbs.grip_pos[i] if limbs.is_gripping(i) else limb_tip[i]
+        if rig.limbs[i].kind == &"wing" or dt <= 0.0:
+            limb_view_tip[i] = target
+            _swing_to[i] = target
+            _swing_t[i] = 1.0
+            continue
+        # A grip is a contact: if the hold moved, retarget immediately with a short arc so
+        # the drawn limb meets the dot instead of finishing an old swing first.
+        if limbs.is_gripping(i) and _swing_to[i].distance_to(target) > 2.0:
+            _start_swing(i, limb_view_tip[i], target)
+        if _swing_t[i] < 1.0:
+            _swing_t[i] = minf(1.0, _swing_t[i] + dt / maxf(_swing_dur[i], 0.01))
+            var e: float = ease_swing(_swing_t[i])
+            limb_view_tip[i] = _swing_from[i].lerp(_swing_to[i], e) + _swing_bow[i] * sin(PI * _swing_t[i])
+            if _swing_t[i] >= 1.0:
+                limb_view_tip[i] = _swing_to[i]
+        elif limb_view_tip[i].distance_to(target) > LIMB_SWING_EPS:
+            _start_swing(i, limb_view_tip[i], target)
+        else:
+            limb_view_tip[i] = target
+            _swing_to[i] = target
+
+
+## Begin an eased arc from the drawn tip to a new target. The arc bulges away from the
+## shoulder along the limb's current radial direction, which is how a real limb swings.
+func _start_swing(i: int, from: Vector2, to: Vector2) -> void:
+    var dist: float = from.distance_to(to)
+    if dist < 0.001:
+        limb_view_tip[i] = to
+        _swing_to[i] = to
+        _swing_t[i] = 1.0
+        return
+    var speed: float = maxf(tune(&"limb_swing_speed", 420.0), 1.0)
+    var dur: float = clampf(dist / speed, 0.08, 0.26)
+    if limbs.is_gripping(i):
+        dur = minf(dur, 0.10)
+    var travel: Vector2 = (to - from) / dist
+    var radial: Vector2 = from - anchor_pos(i)
+    var bow_dir: Vector2 = radial - travel * radial.dot(travel)
+    if bow_dir.length_squared() < 0.0001:
+        bow_dir = travel.orthogonal()
+    var bow: float = minf(dist * tune(&"limb_arc", 0.22), 16.0)
+    _swing_from[i] = from
+    _swing_to[i] = to
+    _swing_bow[i] = bow_dir.normalized() * bow
+    _swing_t[i] = 0.0
+    _swing_dur[i] = dur
+
+
+## Rest direction for the tail: behind the spine, pulled a little further behind by travel
+## and drooped down by weight. Read-only: it never feeds back into the body.
+func _secondary_dir() -> Vector2:
+    var back: Vector2 = -spine_dir()
+    if back.length_squared() < 0.0001:
+        back = Vector2(-facing, 0.0)
+    back = back.normalized()
+    var d: Vector2 = back
+    var v: Vector2 = body.velocity(rig.center_point, _logic_dt)
+    if v.length_squared() > 400.0:
+        d += (-v.normalized()) * tune(&"tail_trail", 0.30)
+    d += Vector2.DOWN * tune(&"tail_droop", 0.20)
+    return d.normalized() if d.length_squared() > 0.0001 else Vector2.DOWN
+
+
+## Step the cosmetic tail against the interpolated rear point, so it stays welded to the
+## drawn hull. Momentum comes from the chain itself (see `CosmeticChain`).
+func _update_tail(dt: float) -> void:
+    if not show_tail or tail.points.is_empty():
+        return
+    tail.spring = tune(&"tail_spring", 320.0)
+    tail.drag = tune(&"tail_drag", 6.0)
+    var alpha: float = Engine.get_physics_interpolation_fraction()
+    tail.step(body.render_pos(rig.rear_point, alpha), _secondary_dir(), dt)
+
+
 # ---------------------------------------------------------------- debug view (circles and lines only)
 func _draw() -> void:
     if body == null or not debug_draw:
@@ -165,6 +298,10 @@ func _draw() -> void:
     for i in n:
         rp[i] = to_local(body.render_pos(i, alpha))
     var centre: Vector2 = rp[rig.center_point]
+    _draw_axis = rp[rig.front_point] - rp[rig.rear_point]
+    if _draw_axis.length_squared() < 0.0001:
+        _draw_axis = Vector2(facing, 0.0)
+    _draw_axis = _draw_axis.normalized()
 
     # Depth decides draw order: far limbs before the hull, near limbs after it. During a
     # turnaround both sides cross zero together, so the order changes at edge-on instead of
@@ -184,6 +321,8 @@ func _draw() -> void:
         if depths[i] < 0.0:
             _draw_limb(i, centre, alpha, depths[i])
 
+    if show_tail:
+        _draw_tail(centre)
     _draw_body(rp, centre)
     for l in rig.links:
         draw_line(_view(rp[l.a], centre), _view(rp[l.b], centre),
@@ -212,15 +351,20 @@ func _draw() -> void:
         draw_arc(to_local(intent.goal), 14.0, 0.0, TAU, 24, Color(1.0, 0.3, 0.3, 0.6), 1.5)
 
 
-## Cosmetic squash about the body centre. Logic positions and the path overlay stay exact.
+## Cosmetic squash + stretch about the body centre. Logic positions and the path overlay
+## stay exact.
 func _view(p: Vector2, centre: Vector2) -> Vector2:
-    return depth_layer.squash_point(p, centre)
+    var q: Vector2 = depth_layer.squash_point(p, centre)
+    return depth_layer.stretch_point(q, centre, _draw_axis,
+        depth_layer.stretch_along(), depth_layer.stretch_across())
 
 
-## A world-space direction under the same squash, for wings and step lift.
+## A world-space direction under the same squash and stretch, for wings and step lift.
 func _view_dir(world_dir: Vector2) -> Vector2:
     var local_dir: Vector2 = to_local(world_dir) - to_local(Vector2.ZERO)
-    return Vector2(local_dir.x * depth_layer.squash, local_dir.y)
+    local_dir.x *= depth_layer.squash
+    return depth_layer.stretch_vector(local_dir, _draw_axis,
+        depth_layer.stretch_along(), depth_layer.stretch_across())
 
 
 func _draw_limb(i: int, centre: Vector2, alpha: float, d: float) -> void:
@@ -229,7 +373,7 @@ func _draw_limb(i: int, centre: Vector2, alpha: float, d: float) -> void:
     var col: Color = Color(0.55, 0.82, 1.0) if is_wing else Color(0.95, 0.72, 0.42)
     col = depth_layer.tint(col, d)
     var a: Vector2 = _view(to_local(anchor_render(i, alpha)), centre)
-    var tip_world: Vector2 = anchor_render(i, alpha) + (limb_tip[i] - anchor_pos(i))
+    var tip_world: Vector2 = anchor_render(i, alpha) + (limb_view_tip[i] - anchor_pos(i))
     var t: Vector2 = _view(to_local(tip_world), centre)
     if is_wing:
         _draw_wing(a, t, col, d)
@@ -253,6 +397,29 @@ func _draw_grip(i: int, centre: Vector2, d: float) -> void:
     draw_circle(g, 4.5 * scale, Color(0.2, 0.9, 0.45, 0.55))
     draw_circle(g, 2.2 * scale, Color(0.85, 1.0, 0.9))
     draw_line(g, g + gn * 9.0 * scale, Color(0.45, 1.0, 0.65, 0.8), 1.5)
+
+
+## The cosmetic tail: the follow chain plus a small feather fan at the tip. Depth comes
+## from the rear point, so the tail tints with the body side. Drawn under the hull.
+func _draw_tail(centre: Vector2) -> void:
+    var n: int = tail.points.size()
+    if n < 2:
+        return
+    var d: float = depth_layer.depth_of(rig.points[rig.rear_point].base_depth)
+    var col: Color = depth_layer.tint(Color(0.62, 0.55, 0.42), d)
+    var pts: PackedVector2Array = PackedVector2Array()
+    pts.resize(n)
+    for i in n:
+        pts[i] = _view(to_local(tail.points[i]), centre)
+    draw_polyline(pts, Color(0.0, 0.0, 0.0, 0.35), 5.0)
+    draw_polyline(pts, col, 2.5)
+    var dir: Vector2 = pts[n - 1] - pts[n - 2]
+    if dir.length_squared() > 0.0001:
+        dir = dir.normalized()
+        for k: float in [-0.45, 0.0, 0.45]:
+            draw_line(pts[n - 1], pts[n - 1] + dir.rotated(k) * 11.0,
+                col.lightened(0.18), 1.5)
+        draw_circle(pts[n - 1], 2.0, col.lightened(0.25))
 
 
 ## Translucent tapered hull through the three spine points, so the limbs read as

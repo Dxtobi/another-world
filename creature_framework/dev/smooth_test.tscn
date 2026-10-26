@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cfsmoothtest1"]
+
+[ext_resource type="Script" path="res://creature_framework/dev/smooth_test.gd" id="1_smooth"]
+
+[node name="SmoothTest" type="Node2D"]
+script = ExtResource("1_smooth")

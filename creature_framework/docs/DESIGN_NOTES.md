@@ -273,13 +273,72 @@ is a turnaround. The console logs the swap at edge-on (`yaw=1.70 squash=0.15 nea
 `yaw=1.45 ... near=+0.12 far=-0.13`), and the HUD shows yaw/squash/facing plus the current draw order. **T** flips
 the goal, **S** toggles slow motion (0.15x, restored on exit).
 
-### T8 still to do
+### T8 smoothness (implemented in `CosmeticChain`, `DepthLayer.stretch`, `Creature` view)
 
-1. **Critically damped everything**: route every visual value through `Steering.damp_*` (T7 did yaw and step lift).
-2. **Secondary motion**: Verlet chains / spring followers for tail, feathers, jaw (cosmetic layer only).
-3. **Eased steps**: limb swings use ease in/out arcs; gait phase blends instead of snapping.
-4. **Squash/stretch** from grip count and speed.
-5. **Fixed tick + interpolation**: logic at 60 Hz, render interpolated (`Body.render_pos`, or Godot 2D physics interpolation for nodes).
+T8 is cosmetic-only like T7: it reads logic (interpolated body points, `limb_tip`, grip state, speed, facing) and
+writes only draw state. No locomotor, brain or `Body` code changed.
+
+**Secondary motion — `CosmeticChain` (`core/secondary.gd`).** Five Verlet points; the root is pinned to the
+interpolated rear point. Each segment is pulled toward the rest pose one segment behind its parent, once per render
+frame:
+
+```
+target = p[i-1] + rest_dir * seg_len
+v      = (p[i] - prev[i]) * exp(-drag * h)          # h = min(dt, 0.0333)
+p[i]  += v + (target - p[i]) * spring * h * h
+```
+
+Then two root→tip passes set every segment to exactly `seg_len`, re-pinning the root after each. Spring and drag
+are in seconds, so a 30 Hz and a 144 Hz display settle the same way. Rest direction blends the spine-back, a pull
+behind the travel direction at speed and a droop:
+
+```
+rest_dir = normalize(-spine_dir + (-v_hat) * tail_trail(0.30) + DOWN * tail_droop(0.20))
+```
+
+With `spring 320`, `drag 6`, `seg 9`, the tail lags **12.65 px** behind its rest pose after 30 sideways frames,
+keeps every segment at **9.00 px**, and settles to **0.000 px** over 600 frames. A teleport cannot stretch it past
+its own length. The tip draws a small three-feather fan, tinted from the rear point's depth.
+
+**Eased limb arcs.** A stepping leg's *drawn* tip follows a smoothstep from its old tip to the new target:
+
+```
+ease_swing(t) = t*t*(3 - 2t)
+tip(t)        = lerp(from, to, ease_swing(t)) + bow * sin(PI * t)
+dur           = clamp(dist / limb_swing_speed(420), 0.08, 0.26)
+bow           = min(dist * limb_arc(0.22), 16) along the radial direction away from the shoulder
+```
+
+The arc bows **16.0 px** off the chord and reaches **72.7 px** of a 140 px travel at half time. The logic
+`limb_tip` and every grip stay exact; only `limb_view_tip` is drawn. A grip retargets with a ≤ **0.10 s** arc
+(**0.080 s** in the harness), so the limb meets the dot. Wings copy their target directly: their flap is already a
+continuous oscillation, and extra lag would smear the beat instead of smoothing a step.
+
+**Squash/stretch.** Speed and missing grips raise one scalar, `stretch` (0..1), damped at `stretch_rate 6`:
+
+```
+target = drive_weight(0.75) * clamp(speed / stretch_speed(380), 0, 1)
+       + hang_weight(0.90)  * (1 - grips / limbs)
+along  = 1 + stretch * 0.09
+across = 1 - stretch * 0.05
+```
+
+`stretch_point()` scales about the body centre on the spine axis (`front - rear`) and the perpendicular, after the
+depth squash, so the two deformations compose. `stretch_vector()` is the same transform without translation, for
+wings and step lift. Full speed reaches **0.75** stretch (`1.067 / 0.963`); a climber with no grips sags to
+**0.90**; the first frame moves only **0.071**, so it cannot pop. The axes stay bounded at **1.09 / 0.95** and
+never go negative.
+
+Acceptance (`dev/smooth_test.tscn`, 53 checks): chain lag/settle/segment/finite as above; smoothstep endpoints,
+symmetry, monotonicity and never-linear; arc bow, half-travel, exact landing, untouched logic tip and bounded
+duration; wings do not lag; a grip arc is ≤0.10 s; stretch is neutral at rest, rises with speed and hang, clamps
+at 1 and deforms along/across correctly. A live run stays finite with **31.7 px** tail sway, **0.18** max stretch
+and an **8.80 px** max segment. The T7 depth, T6 mode and authoring harnesses still pass unchanged.
+
+Demo (`dev/smooth_demo.tscn`, MCP-verified): the same left/right crossings as the depth demo, now with the tail
+lagging through each turn (the faint line is its rest direction), the legs arcing as they stride and the body
+stretching at speed. The HUD prints speed, stretch (`along/across`) and tail sway; **T** flips the goal, **S**
+toggles slow motion (0.15x, restored on exit). The game log has no errors.
 
 ## 7. Cosmetics notes (T9)
 
@@ -409,3 +468,11 @@ over the rest pose. `RigDraw.text()` adds a dark outline so labels survive any b
   `Body` code changed.
 - **T7 (`base_depth` validation in `authoring/rig_blueprint.gd`):** the `RigPoint` setter clamps, but `validate()`
   checks finite -1..+1 as well, so a rig assembled in code cannot feed the depth layer an out-of-range side.
+- **T8 (new `core/secondary.gd`, view-only changes in `core/creature.gd` and `core/depth.gd`):** `CosmeticChain` is
+  a separate object so tails/feathers never grow the logic record; it only reads an anchor and a rest direction and
+  writes its own points. `DepthLayer` gained `stretch`, `update_stretch()`, `stretch_along()/across()`,
+  `stretch_point()` and `stretch_vector()` beside the squash, keeping every view deformation in one cosmetic class.
+  `Creature` gained `limb_view_tip`, `tail`, `show_tail`, the `_swing_*` state, `_update_limb_views()`,
+  `_start_swing()`, `_secondary_dir()`, `_update_tail()`, `_draw_tail()`, `_draw_axis` and `_logic_dt`.
+  `_process()` now advances stretch, eased tips and the tail at render rate; `_draw()` uses the eased tips and the
+  stretched view. Logic positions, grips and `limb_tip` are untouched; no locomotor, brain or `Body` code changed.
