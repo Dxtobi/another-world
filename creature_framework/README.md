@@ -6,15 +6,16 @@ A reusable framework for building **many different creatures with many different
 Inspired by the Rain World animation approach (GDC talk "The Rain World Animation Process"): a cheap, stable
 **logic layer** (points + distance constraints) decorated by a heavy **cosmetic layer** that only ever *reads* the logic.
 
-> **Status:** T0-T6 done, plus the editor-authoring layer. The framework lives inside the *Another World*
+> **Status:** T0-T7 done, plus the editor-authoring layer. The framework lives inside the *Another World*
 > project (`res://creature_framework/`), runs on Godot 4.7.1, and is verified by a self-terminating 60 s
 > scripted run (0 errors, 0 NaN, bounded speeds, no single-frame pose pops), a world harness that checks the
 > real level's drawn polygons and path grids, a flight harness that flies a slalom to a goal, a grip harness
 > that latches limbs onto a wall, a climb harness that crawls a wall hand-over-hand and sags with no grips, a
-> mode harness that lands, climbs, launches and refuses to switch when the goal is in open air, and an
-> authoring harness that bakes the authored vulture scene back to the exact reference rig. Steps 1-6 (Body,
+> mode harness that lands, climbs, launches and refuses to switch when the goal is in open air, an
+> authoring harness that bakes the authored vulture scene back to the exact reference rig, and a depth harness
+> that turns a profile body through a front/back view and swaps near/far exactly once. Steps 1-7 (Body,
 > Intent/Brain, LocoManager, FlyLocomotor, debug view, world query, path following, limb grips, climb
-> locomotor, mode switching) and the scene-based rig editor are implemented; T7 (depth) is next.
+> locomotor, mode switching, depth layer) and the scene-based rig editor are implemented; T8 (smoothness) is next.
 
 Requires **Godot 4.7+** (developed against 4.7.1).
 
@@ -26,6 +27,9 @@ a wall while the goal slides up and down it, with the grip count in the HUD.
 For the T6 mode read, open `creature_framework/dev/mode_demo.tscn` and press F6: the goal alternates between
 the wall and open air, so the vulture lands, climbs, launches off the wall and returns. The HUD shows the active
 locomotor, both blend weights, the grip count and the current phase.
+For the T7 depth read, open `creature_framework/dev/depth_demo.tscn` and press F6: the vulture flies between a
+left and a right goal, so every crossing is a turnaround through edge-on. The HUD shows yaw, squash, facing and
+the current near/far draw order; **T** flips the goal now and **S** toggles slow motion.
 To author a creature, open `creature_framework/creatures/vulture.tscn`: the rig is a normal scene, and the
 **Validate rig** button in the inspector checks it before anything runs.
 To *try* a rig without touching code, open `creature_framework/dev/playground.tscn`, set its `rig_scene`
@@ -70,6 +74,7 @@ core/
   loco_manager.gd    scoring + hysteresis + weighted crossfade
   move_output.gd     accumulates accelerations and limb targets, scaled by blend weight
   steering.gd        arrive(), damp_f(), damp_v()
+  depth.gd           T7 cosmetic 2.5D: yaw, squash, per-part depth, scale/tint/z helpers
   creature.gd        glue node + proxy variables + debug draw
 brains/mouse_brain.gd                 debug brain (goal = mouse)
 brains/demo_brain.gd                  scripted brain for reproducible T0 runs
@@ -90,6 +95,8 @@ dev/climb_test.tscn                   T5 harness: wall climb, gait cycle, sway, 
 dev/climb_demo.tscn                   T5 live demo: visible wall, oscillating goal, HUD grip count
 dev/mode_test.tscn                    T6 harness: land/climb/launch, flight-only, ambiguous goal (exits non-zero)
 dev/mode_demo.tscn                    T6 live demo: wall vs open-air goal, mode HUD + path overlay
+dev/depth_test.tscn                   T7 harness: turn sweep, draw-order swap, step lift, live facing (exits non-zero)
+dev/depth_demo.tscn                   T7 live demo: left/right goals, yaw/squash/draw-order HUD, T turn, S slow
 dev/authoring_test.tscn               authoring harness: scene bake, mutation, validation, runtime (exits non-zero)
 dev/playground.tscn                   no-code playground: exported rig scene + mouse goal + R rebuild
 locomotors/fly_locomotor.gd           flight: flap lift + glide lift + path steering + wall feelers
@@ -102,9 +109,13 @@ Per-tick order (in `Creature._physics_process`):
 `brain.think -> path.update -> limbs.update (drop over-extended grips) -> loco.update (emit forces; free limbs
 try to grip) -> body.step -> world.resolve`. Cosmetics run in `_process`.
 
-### Debug view (dev aid; deleted when T7/T9 art lands)
+### Debug view (dev aid; replaced by T9 art)
 Circles and lines only, but it has to carry the read until then:
 
+- **Depth**: `DepthLayer` gives every part a signed depth from its side (`lane` or a point's
+  `base_depth`). Far parts draw before the body hull and are darker/smaller; near parts draw after it. During a
+  turnaround both sides cross zero at edge-on, so the order swaps once, smoothly. The whole creature is also
+  squashed horizontally around its centre by `abs(cos(yaw))`, never below 0.15, which is the front/back view.
 - **Body**: a tapered hull through the three spine points plus a head disc, so limbs have something to attach to.
 - **Wing**: leading edge (shoulder → tip), a trailing edge swept back in the body frame, and 3 feather ribs.
   A single `presentation` scalar widens the chord *and* shortens the span, so the wing is broad when it faces the
@@ -112,6 +123,8 @@ Circles and lines only, but it has to carry the read until then:
 - **Leg**: two bones (`0.52 * reach` each) with the knee placed by the law of cosines, bending backwards. The far leg
   is shorter (foreshortened), thinner and darker, and the two legs stride in antiphase, so it reads as two legs at
   different depths rather than one line copied.
+- **Step lift**: a free leg while climbing/crawling raises its foot off the surface along the grip normal, fattens
+  it slightly and shrinks its shadow; a held leg drops back. Wings never step.
 - **Grip**: a translucent green dot on the contact point, a bright core, and a short tick along the surface normal.
   The limb tip is pinned to that dot, so "holding" reads even while the limb itself is still a line.
 - In `dev/creature_test.tscn`, **Z** toggles a 3.2× camera that follows the creature.
@@ -121,7 +134,7 @@ Circles and lines only, but it has to carry the read until then:
 ## Roadmap (do in order, one task at a time)
 
 Each task has an **acceptance test**. Do not start the next task until the current one passes.
-Keep the debug view (circles and lines) working at all times. **No art until T7.**
+Keep the debug view (circles and lines) working at all times. **No art until T9.**
 Read `docs/DESIGN_NOTES.md` for the algorithms referenced below.
 
 ### T0. Run it and fix it  ✅ done
@@ -294,11 +307,26 @@ Read `docs/DESIGN_NOTES.md` for the algorithms referenced below.
   godot --headless --path . res://creature_framework/dev/mode_test.tscn
   ```
 
-### T7. Depth layer: make 2D feel 3D
-- `core/depth.gd`: `yaw` as an angle (damped toward facing), `squash = cos(yaw)` clamped away from 0,
-  per-part `depth = lane * cos(yaw)`, used for `z_index`, scale (`1 + depth * 0.08`) and a darker tint on the far side.
-- Feet/limb tips get a hidden "height" during steps (raise + scale + shrink shadow).
-- **Accept:** turning around passes through a front/back view and near/far limbs swap draw order smoothly.
+### T7. Depth layer: make 2D feel 3D ✅ done
+- `core/depth.gd`: `DepthLayer` holds `yaw`, with a continuous target from the logic-facing value
+  (`+1 -> 0`, `0 -> PI/2`, `-1 -> PI`), damped through `Steering.damp_f`. `squash = max(|cos(yaw)|, 0.15)`.
+  `depth_of(side) = side * cos(yaw)`, so a near limb is `+1` at one profile, `0` at edge-on and `-1` at the
+  other; `scale_for()` is `1 + depth * 0.08`, `tint()` darkens the far side, and `z_for()` gives a future
+  per-part CanvasItem z index.
+- The debug view sorts limbs by depth: far limbs before the body hull, near limbs after it. It squashes every
+  creature point around the body centre by `squash`, so the turn passes through a visibly narrow front/back
+  view. `RigPoint.base_depth` is now read for spine-point depth/tint (and validated to -1..+1).
+- Feet/limb tips get a hidden "height" during steps: a free leg while climbing/crawling raises its foot along
+  the grip normal (`step_height`, default 9 px), fattens slightly and shrinks a shadow; a held leg drops back.
+  Wings never step.
+- **Accept:** `dev/depth_test.tscn` passes 25 checks: profile depths are +1/-1; a 240-frame reversal sweeps
+  yaw 0 → 3.14, dips to squash **0.15**, and swaps near/far draw order **exactly once** at **|depth| 0.13**;
+  a live creature's depth layer follows its facing to the opposite profile. `dev/depth_demo.tscn` shows the
+  turn live (console logs the swap at `squash=0.15`, e.g. `near=-0.13 far=+0.13`).
+
+  ```
+  godot --headless --path . res://creature_framework/dev/depth_test.tscn
+  ```
 
 ### T8. Smoothness pass
 - Everything driven through `damp_*`. Secondary motion: Verlet chains for tails/feathers/dangly bits (cosmetic only).
@@ -380,7 +408,7 @@ is what lets the playground rebuild a scene you just saved without restarting th
 
 ### Inspectors and registries
 
-- **`RigPoint`**: `mass` (1.0 default), `base_depth` (-1 far .. +1 near, reserved for T7).
+- **`RigPoint`**: `mass` (1.0 default), `base_depth` (-1 far .. +1 near; read by the T7 depth layer's tint/scale).
 - **`RigLimb`**: `kind` (`wing`/`leg`/`tentacle`/`claw`/`fin`), `style` (`default`/`flap`/`walk2`/
   `reach`/`dangle`/`tentacle`), `lane` (`Far:-1`/`Near:1`), `reach`, `show_reach`.
 - **`RigBlueprint`**: the three point names, `locomotor_flags` (`Fly`, `Climb`), `tuning`, **Validate rig**.
@@ -444,7 +472,7 @@ scene-loaded rig.
 - [x] T5 climb locomotor
 - [x] T6 mode switching
 - [x] Editor authoring (scene rigs, registries, validation)
-- [ ] T7 depth layer
+- [x] T7 depth layer
 - [ ] T8 smoothness pass
 - [ ] T9 cosmetics and off-screen switch
 - [ ] T10 second creature

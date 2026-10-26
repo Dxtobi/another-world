@@ -88,6 +88,8 @@ func validate() -> PackedStringArray:
         names[key] = true
         if point.mass <= 0.0:
             errors.append("point '%s' mass must be > 0 (got %.3f)" % [key, point.mass])
+        if point.base_depth < -1.0 or point.base_depth > 1.0 or not is_finite(point.base_depth):
+            errors.append("point '%s' base_depth must be -1..+1 (got %.3f)" % [key, point.base_depth])
         if not point.position.is_finite():
             errors.append("point '%s' position is not finite" % key)
         if not is_zero_approx(point.rotation) or not point.scale.is_equal_approx(Vector2.ONE):

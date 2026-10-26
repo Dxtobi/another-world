@@ -13,7 +13,7 @@ extends Node2D
         mass = value
         _refresh()
 
-## -1 far side .. +1 near side. Reserved for the T7 depth layer.
+## -1 far side .. +1 near side. Read by the T7 depth layer.
 @export var base_depth: float = 0.0:
     set(value):
         base_depth = clampf(value, -1.0, 1.0)

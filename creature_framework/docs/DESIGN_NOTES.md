@@ -222,16 +222,64 @@ Acceptance (`dev/mode_test.tscn`): climb-only goal -> exactly 1 switch, reach in
 `vx -96.8`, 0 grips; flight-only goal -> **0** switches, reach in **8.00 s**; ambiguous goal -> climb, exactly
 **1** switch, reach in **3.35 s**, 4 grips. **0** body points inside terrain in every phase.
 
-## 6. Making 2D feel 3D (T7, T8)
+## 6. Depth layer (T7, implemented in `DepthLayer`)
 
-1. **Yaw instead of flip**: `yaw` is an angle damped toward the facing; horizontal squash `cos(yaw)` (clamp |.| >= 0.15).
-2. **Per-part depth** `depth = lane * cos(yaw)` -> z_index sign, scale `1 + depth*0.08`, far side tinted darker.
-3. **Lift out of the plane**: a stepping foot has hidden height h; draw it raised, slightly bigger, with a smaller shadow.
-4. **Critically damped everything**: use `Steering.damp_*`, never assign visuals directly.
-5. **Secondary motion**: Verlet chains / spring followers for tail, feathers, jaw (cosmetic layer only).
-6. **Eased steps**: limb swings use ease in/out arcs; gait phase blends instead of snapping.
-7. **Squash/stretch** from grip count and speed.
-8. **Fixed tick + interpolation**: logic at 60 Hz, render interpolated (`Body.render_pos`, or Godot 2D physics interpolation for nodes).
+T7 is purely cosmetic: it reads the logic-facing proxy and writes nothing back. `yaw` is the body's turn away
+from a side profile, damped toward a continuous target derived from the logic-facing value:
+
+```
+facing +1  ->  yaw 0       profile, facing right
+facing  0  ->  yaw PI/2    front/back view (edge-on)
+facing -1  ->  yaw PI      the opposite profile
+
+target = (1 - facing) * 0.5 * PI
+yaw    = Steering.damp_f(yaw, target, yaw_rate (10), dt)
+```
+
+Because the target is continuous, a reversal sweeps *through* the front/back view instead of snapping at the
+sign change. It runs in `Creature._process`, not `_physics_process`, so the turn is smooth even when the display
+runs faster than the fixed tick.
+
+- **Squash:** `squash = max(|cos(yaw)|, 0.15)`. Every drawn point is compressed horizontally about the body
+  centre (`DepthLayer.squash_point`), and wing/step directions are squashed by the same factor (`_view_dir`). The
+  0.15 floor stops the body collapsing to a line on the exact edge-on frame. Logic positions, the path overlay and
+  the world are untouched — only the drawing is squashed.
+- **Per-part depth:** `depth_of(side) = side * cos(yaw)`, where `side` is a limb's authored `lane` (-1/+1) or a
+  point's `base_depth`. `cos(yaw)` is +1 at one profile, 0 at edge-on and -1 at the other, so each side crosses
+  zero once and near/far swap exactly once, at the narrowest frame. Near parts scale by `1 + depth * 0.08`; far
+  parts darken by `depth * 0.35` and the far wing loses a little chord/span as extra foreshortening. `z_for()`
+  gives an integer z index for T9's per-part CanvasItems; the debug draw cannot use it, because a single `_draw()`
+  can only order its own primitives by call order.
+- **Draw order:** limbs are sorted by depth. Far limbs (`depth < 0`) draw before the body hull, near limbs after
+  it, ties broken by limb index so the order is stable. The hull itself is tinted by the average point depth.
+  Every vulture point authors `base_depth = 0`, so its hull tint stays constant today; the field is there for a
+  rig with a genuinely layered spine.
+- **Step lift:** a free **leg** while the active locomotor is not `fly` damps `step_lift[i]` toward 1 (rate 10);
+  a held leg, a wing, or flight damps it toward 0. The foot is raised `lift * step_height` (9 px) along the
+  average grip normal (`UP` when there is no grip), fattened by up to 18 %, and its shadow shrinks while staying
+  at the logic tip — the gap between foot and shadow is the height. Step lift is feel only; grips and forces are
+  unchanged.
+- **What T7 deliberately does not do:** no art, no secondary motion, no eased gait arcs, and no logic change.
+  Those stay in T8/T9. The vector debug view remains the visible layer.
+
+Acceptance (`dev/depth_test.tscn`, 25 checks): at the right profile the near lane depth is **+1.00**, the far lane
+**-1.00**, and their scales **1.08 / 0.92**. A 240-frame reversal sweeps yaw **0 -> 3.14**, dips to squash
+**0.15**, and swaps near/far draw order **exactly once** at **|depth| 0.13** (the edge-on frame). A free leg lifts
+to **> 0.8** and drops **< 0.2** when gripped; flight and wings stay **< 0.05**. A live creature facing left ends
+at `yaw 3.14`, `squash 1.00`, with near/far depths swapped.
+
+Demo (`dev/depth_demo.tscn`, MCP-verified): the vulture flies between a left and a right goal, so every crossing
+is a turnaround. The console logs the swap at edge-on (`yaw=1.70 squash=0.15 near=-0.13 far=+0.13`, later
+`yaw=1.45 ... near=+0.12 far=-0.13`), and the HUD shows yaw/squash/facing plus the current draw order. **T** flips
+the goal, **S** toggles slow motion (0.15x, restored on exit).
+
+### T8 still to do
+
+1. **Critically damped everything**: route every visual value through `Steering.damp_*` (T7 did yaw and step lift).
+2. **Secondary motion**: Verlet chains / spring followers for tail, feathers, jaw (cosmetic layer only).
+3. **Eased steps**: limb swings use ease in/out arcs; gait phase blends instead of snapping.
+4. **Squash/stretch** from grip count and speed.
+5. **Fixed tick + interpolation**: logic at 60 Hz, render interpolated (`Body.render_pos`, or Godot 2D physics interpolation for nodes).
 
 ## 7. Cosmetics notes (T9)
 
@@ -240,9 +288,9 @@ Acceptance (`dev/mode_test.tscn`): climb-only goal -> exactly 1 switch, reach in
 - Wings: node per wing at the shoulder anchor, rotated by the wing logic angle; feather splay from `sin(flap_phase)`.
 - Everything here reads `Creature`/`Body` only. Off-screen: `VisibleOnScreenNotifier2D` -> set cosmetics `process_mode`/`visible`.
 
-### Debug-view stand-in (implemented now, replaced at T7/T9)
+### Debug-view stand-in (implemented, replaced by T9 art)
 
-No art until T7, so the vector debug view carries the read. Formulas worth keeping when the art lands:
+No art until T9, so the vector debug view carries the read. Formulas worth keeping when the art lands:
 
 1. **Wing presentation** — one scalar drives both shape axes:
    `presentation = clamp(0.62 * downstroke + 0.38 * (1 - abs(facing)), 0, 1)` with
@@ -302,10 +350,13 @@ Why the layout is shaped that way:
 - **Limbs bake in point order, then child order**, so `LimbSystem` indices are stable for a given scene.
 
 Validation (all reported by `validate()`, and `build_rig()` returns `null` while anything is wrong): >= 3 points;
-unique non-empty names; `mass > 0`; finite positions; no rotation/scale; the three role names exist and differ;
+unique non-empty names; `mass > 0`; `base_depth` finite and within -1..+1; finite positions; no rotation/scale;
+the three role names exist and differ;
 limbs are direct children of a `RigPoint` with a known `style`, a `lane` of -1/+1, `reach > 0`; link endpoints
 exist and differ, stiffness 0..1, finite positive rest lengths; at least one locomotor flag and no unknown bits;
 every tuning value finite. The **Validate rig** inspector button prints the same list.
+`RigPoint.base_depth`'s setter already clamps to -1..+1; `validate()` checks it again so a rig built in code
+(not through the inspector) cannot feed the depth layer a value outside its range.
 
 Two Godot 4.7 details worth remembering:
 
@@ -331,7 +382,7 @@ over the rest pose. `RigDraw.text()` adds a dark outline so labels survive any b
   project decision, not a core change; `WorldQuery`'s public API (`is_solid`, `resolve`) stays identical.
 - **T1 polish (debug draw in `core/creature.gd`):** body hull, wing silhouette and two-bone legs were added to the
   glue node so the framework can be judged before any art exists. They only read `thrust`/`flap_phase`/`facing` and
-  write nothing back, so the one-way rule holds; the whole block is deleted when T7/T9 cosmetics land.
+  write nothing back, so the one-way rule holds; the whole block is deleted when T9 cosmetics land.
 - **T5 (grip helpers in `core/limb_system.gd`):** added `grip_centroid()`, `grip_normal_avg()` and
   `release_furthest_behind()` because the climb body constraint needs to read all grips through one API instead of
   reaching into the arrays from the locomotor. `grip_normal()` was renamed `grip_normal_avg()` to stop colliding
@@ -350,3 +401,11 @@ over the rest pose. `RigDraw.text()` adds a dark outline so labels survive any b
   reads it yet — T9 binds the cosmetic behaviour to the catalog — but baking it now means a style picked in the
   inspector is never silently dropped. `kind` stays the coarse debug/collision family, so existing code that
   switches on `kind` is untouched.
+- **T7 (new `core/depth.gd`, view changes in `core/creature.gd`):** `DepthLayer` is a separate cosmetic object
+  rather than more fields on `Creature`, so the logic record keeps its shape and T9 can replace the whole thing
+  with per-part art. `Creature` gained `depth_layer`, a per-limb `step_lift` array, `_update_step_lift()`, the
+  `_view()`/`_view_dir()` squash pair, and a depth-sorted `_draw()`. `_process` now also advances depth and step
+  lift at render rate. Everything reads `facing` and `limbs` and writes only draw state; no locomotor, brain or
+  `Body` code changed.
+- **T7 (`base_depth` validation in `authoring/rig_blueprint.gd`):** the `RigPoint` setter clamps, but `validate()`
+  checks finite -1..+1 as well, so a rig assembled in code cannot feed the depth layer an out-of-range side.

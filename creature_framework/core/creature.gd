@@ -15,6 +15,10 @@ var path: PathFollower = null
 var limbs: LimbSystem = null
 var intent: Intent = Intent.new()
 var out: MoveOutput = MoveOutput.new()
+## Cosmetic 2.5D view. Updated in `_process`; never read by logic.
+var depth_layer: DepthLayer = DepthLayer.new()
+## Per-limb hidden step height (0..1). Cosmetic; drives the raised foot + shrunken shadow.
+var step_lift: PackedFloat32Array = PackedFloat32Array()
 
 # Proxy variables: written by locomotors, read by cosmetics. Never the other way round.
 var thrust: float = 0.0
@@ -42,6 +46,9 @@ func setup(p_rig: CreatureRig, p_brain: Brain, p_world: WorldQuery, origin: Vect
     limb_tip.resize(rig.limbs.size())
     for i in rig.limbs.size():
         limb_tip[i] = anchor_pos(i)
+    step_lift.resize(rig.limbs.size())
+    step_lift.fill(0.0)
+    depth_layer.reset(facing)
 
 
 func _physics_process(dt: float) -> void:
@@ -71,7 +78,14 @@ func _physics_process(dt: float) -> void:
     world.resolve(body)
 
 
-func _process(_dt: float) -> void:
+func _process(dt: float) -> void:
+    if body == null:
+        return
+    # Depth is a render-rate cosmetic: smoothing it here keeps the turn free of 60 Hz
+    # stepping even when the physics tick is slower than the display.
+    var stepping: bool = loco.current != null and loco.current.id != &"fly"
+    _update_step_lift(dt, stepping)
+    depth_layer.update(facing, tune(&"yaw_rate", 10.0), dt)
     queue_redraw()
 
 
@@ -127,6 +141,19 @@ func anchor_render(limb_index: int, alpha: float) -> Vector2:
     return body.render_pos(lm.anchor_point, alpha) + dir_to_world(lm.local_offset)
 
 
+## A free leg lifts while the creature is climbing (or crawling); a held leg drops back onto
+## the surface. Wings never step. This is feel, not logic: the grip itself is unchanged.
+func _update_step_lift(dt: float, stepping: bool) -> void:
+    if limbs == null:
+        return
+    var rate: float = tune(&"step_lift_rate", 10.0)
+    for i in rig.limbs.size():
+        var want: float = 0.0
+        if stepping and not limbs.is_gripping(i) and rig.limbs[i].kind == &"leg":
+            want = 1.0
+        step_lift[i] = Steering.damp_f(step_lift[i], want, rate, dt)
+
+
 # ---------------------------------------------------------------- debug view (circles and lines only)
 func _draw() -> void:
     if body == null or not debug_draw:
@@ -137,37 +164,38 @@ func _draw() -> void:
     rp.resize(n)
     for i in n:
         rp[i] = to_local(body.render_pos(i, alpha))
+    var centre: Vector2 = rp[rig.center_point]
 
-    _draw_body(rp)
+    # Depth decides draw order: far limbs before the hull, near limbs after it. During a
+    # turnaround both sides cross zero together, so the order changes at edge-on instead of
+    # popping. The same values scale and tint each part.
+    var order: Array[int] = []
+    var depths: PackedFloat32Array = PackedFloat32Array()
+    depths.resize(rig.limbs.size())
+    for i in rig.limbs.size():
+        order.append(i)
+        depths[i] = depth_layer.depth_of(float(rig.limbs[i].lane))
+    order.sort_custom(func(a: int, b: int) -> bool:
+        if is_equal_approx(depths[a], depths[b]):
+            return a < b
+        return depths[a] < depths[b])
+
+    for i in order:
+        if depths[i] < 0.0:
+            _draw_limb(i, centre, alpha, depths[i])
+
+    _draw_body(rp, centre)
     for l in rig.links:
-        draw_line(rp[l.a], rp[l.b], Color(0.6, 0.65, 0.8, 0.45), 1.0)
+        draw_line(_view(rp[l.a], centre), _view(rp[l.b], centre),
+            Color(0.6, 0.65, 0.8, 0.45), 1.0)
     for i in n:
-        draw_circle(rp[i], 2.5, Color(1.0, 1.0, 1.0, 0.55))
+        var pd: float = depth_layer.depth_of(rig.points[i].base_depth)
+        draw_circle(_view(rp[i], centre), 2.5 * depth_layer.scale_for(pd),
+            depth_layer.tint(Color(1.0, 1.0, 1.0, 0.55), pd))
 
-    for i in rig.limbs.size():
-        var lm: LimbDef = rig.limbs[i]
-        var is_wing: bool = lm.kind == &"wing"
-        var col: Color = Color(0.55, 0.82, 1.0) if is_wing else Color(0.95, 0.72, 0.42)
-        if lm.lane < 0:
-            col = col.darkened(0.35)
-        var a: Vector2 = to_local(anchor_render(i, alpha))
-        var t: Vector2 = to_local(anchor_render(i, alpha) + (limb_tip[i] - anchor_pos(i)))
-        if is_wing:
-            _draw_wing(a, t, col, lm)
-        else:
-            _draw_leg(a, t, col, lm)
-            draw_circle(t, 2.5, col)
-
-    # Grips: a bright dot on the surface plus a tick along its outward normal, so "holding"
-    # reads even while the limb itself is still a line.
-    for i in rig.limbs.size():
-        if limbs == null or not limbs.is_gripping(i):
-            continue
-        var g: Vector2 = to_local(limbs.grip_pos[i])
-        var gn: Vector2 = limbs.grip_normal[i]
-        draw_circle(g, 4.5, Color(0.2, 0.9, 0.45, 0.55))
-        draw_circle(g, 2.2, Color(0.85, 1.0, 0.9))
-        draw_line(g, g + gn * 9.0, Color(0.45, 1.0, 0.65, 0.8), 1.5)
+    for i in order:
+        if depths[i] >= 0.0:
+            _draw_limb(i, centre, alpha, depths[i])
 
     if path != null and path.has_path():
         var col: Color = Color(0.45, 1.0, 0.75, 0.55)
@@ -184,9 +212,52 @@ func _draw() -> void:
         draw_arc(to_local(intent.goal), 14.0, 0.0, TAU, 24, Color(1.0, 0.3, 0.3, 0.6), 1.5)
 
 
+## Cosmetic squash about the body centre. Logic positions and the path overlay stay exact.
+func _view(p: Vector2, centre: Vector2) -> Vector2:
+    return depth_layer.squash_point(p, centre)
+
+
+## A world-space direction under the same squash, for wings and step lift.
+func _view_dir(world_dir: Vector2) -> Vector2:
+    var local_dir: Vector2 = to_local(world_dir) - to_local(Vector2.ZERO)
+    return Vector2(local_dir.x * depth_layer.squash, local_dir.y)
+
+
+func _draw_limb(i: int, centre: Vector2, alpha: float, d: float) -> void:
+    var lm: LimbDef = rig.limbs[i]
+    var is_wing: bool = lm.kind == &"wing"
+    var col: Color = Color(0.55, 0.82, 1.0) if is_wing else Color(0.95, 0.72, 0.42)
+    col = depth_layer.tint(col, d)
+    var a: Vector2 = _view(to_local(anchor_render(i, alpha)), centre)
+    var tip_world: Vector2 = anchor_render(i, alpha) + (limb_tip[i] - anchor_pos(i))
+    var t: Vector2 = _view(to_local(tip_world), centre)
+    if is_wing:
+        _draw_wing(a, t, col, d)
+    else:
+        var lift_dir: Vector2 = Vector2.UP
+        if limbs != null and limbs.grip_count() > 0:
+            lift_dir = limbs.grip_normal_avg()
+        _draw_leg(a, t, col, d, step_lift[i], lift_dir, lm.reach)
+    _draw_grip(i, centre, d)
+
+
+## A grip reads as a bright dot on the surface plus a tick along its outward normal.
+func _draw_grip(i: int, centre: Vector2, d: float) -> void:
+    if limbs == null or not limbs.is_gripping(i):
+        return
+    var scale: float = depth_layer.scale_for(d)
+    var g: Vector2 = _view(to_local(limbs.grip_pos[i]), centre)
+    var gn: Vector2 = _view_dir(limbs.grip_normal[i])
+    if gn.length_squared() > 0.0001:
+        gn = gn.normalized()
+    draw_circle(g, 4.5 * scale, Color(0.2, 0.9, 0.45, 0.55))
+    draw_circle(g, 2.2 * scale, Color(0.85, 1.0, 0.9))
+    draw_line(g, g + gn * 9.0 * scale, Color(0.45, 1.0, 0.65, 0.8), 1.5)
+
+
 ## Translucent tapered hull through the three spine points, so the limbs read as
 ## attached to a body instead of four lines growing out of one dot. Debug only.
-func _draw_body(rp: PackedVector2Array) -> void:
+func _draw_body(rp: PackedVector2Array, centre: Vector2) -> void:
     var f: Vector2 = rp[rig.front_point]
     var m: Vector2 = rp[rig.center_point]
     var r: Vector2 = rp[rig.rear_point]
@@ -202,76 +273,101 @@ func _draw_body(rp: PackedVector2Array) -> void:
         f + perp * rf, m + perp * rm, r + perp * rr,
         r - perp * rr, m - perp * rm, f - perp * rf,
     ])
-    draw_colored_polygon(poly, Color(0.15, 0.17, 0.23, 0.88))
+    for i in poly.size():
+        poly[i] = _view(poly[i], centre)
+
+    var hull_depth: float = 0.0
+    for p in rig.points:
+        hull_depth += depth_layer.depth_of(p.base_depth)
+    hull_depth /= float(maxi(rig.points.size(), 1))
+    var hull_col: Color = depth_layer.tint(Color(0.15, 0.17, 0.23, 0.88), hull_depth)
+    draw_colored_polygon(poly, hull_col)
     var outline: PackedVector2Array = poly.duplicate()
     outline.append(poly[0])
     draw_polyline(outline, Color(0.55, 0.62, 0.82, 0.9), 1.5)
-    draw_circle(f, rf + 0.5, Color(0.19, 0.23, 0.31, 0.95))
-    draw_circle(f, 2.5, Color.ORANGE)
+    var head: Vector2 = _view(f, centre)
+    var head_r: float = (rf + 0.5) * lerpf(1.0, depth_layer.squash, 0.7)
+    draw_circle(head, head_r, Color(0.19, 0.23, 0.31, 0.95))
+    draw_circle(head, 2.5 * depth_layer.squash, Color.ORANGE)
 
 
 ## A wing, not a fan: leading edge from the shoulder to the tip, a trailing edge
 ## that sweeps back, and 3 feather ribs. Depth is sold by span and chord together —
 ## turning toward camera makes it SHORT AND BROAD, edge-on makes it LONG AND THIN.
-func _draw_wing(a: Vector2, tip: Vector2, col: Color, lm: LimbDef) -> void:
+func _draw_wing(a: Vector2, tip: Vector2, col: Color, d: float) -> void:
     var v: Vector2 = tip - a
     var length: float = v.length()
     if length < 1.0:
         return
-    var d: Vector2 = v / length
+    var dir: Vector2 = v / length
     var ds: float = maxf(0.0, -cos(flap_phase))                 # 0 on recovery, 1 mid downstroke
     var presentation: float = clampf(0.62 * ds + 0.38 * (1.0 - absf(facing)), 0.0, 1.0)
-    var span: float = length * lerpf(1.0, 0.58, presentation)
-    var chord: float = lerpf(4.0, 34.0, presentation)
-    if lm.lane < 0:
+    var scale: float = depth_layer.scale_for(d)
+    var span: float = length * lerpf(1.0, 0.58, presentation) * scale
+    var chord: float = lerpf(4.0, 34.0, presentation) * scale
+    if d < 0.0:
         chord *= 0.84
         span *= 0.92
-    var t: Vector2 = a + d * span
+    var t: Vector2 = a + dir * span
 
     # Trailing edge points backwards in the body frame, flattened onto the wing plane.
-    var back_w: Vector2 = dir_to_world(Vector2(-1.0, 0.0))
-    var back: Vector2 = (to_local(back_w) - to_local(Vector2.ZERO))
-    var trail: Vector2 = back - d * back.dot(d)
+    var back: Vector2 = _view_dir(dir_to_world(Vector2(-1.0, 0.0)))
+    var trail: Vector2 = back - dir * back.dot(dir)
     if trail.length_squared() < 0.0001:
-        trail = d.orthogonal()
+        trail = dir.orthogonal()
     trail = trail.normalized()
 
-    var edge_1: Vector2 = a + d * (span * 0.12) + trail * chord * 0.30
-    var edge_2: Vector2 = a + d * (span * 0.46) + trail * chord * 0.90
-    var edge_3: Vector2 = a + d * (span * 0.80) + trail * chord * 0.62
-    var lead: Vector2 = a + d * (span * 0.55) - trail * 1.2
+    var edge_1: Vector2 = a + dir * (span * 0.12) + trail * chord * 0.30
+    var edge_2: Vector2 = a + dir * (span * 0.46) + trail * chord * 0.90
+    var edge_3: Vector2 = a + dir * (span * 0.80) + trail * chord * 0.62
+    var lead: Vector2 = a + dir * (span * 0.55) - trail * 1.2
     var poly: PackedVector2Array = PackedVector2Array([a, edge_1, edge_2, edge_3, t, lead])
     draw_colored_polygon(poly, Color(col.r, col.g, col.b, 0.20))
     var outline: PackedVector2Array = poly.duplicate()
     outline.append(poly[0])
     draw_polyline(outline, col, 1.6)
     for k: float in [0.30, 0.52, 0.74]:
-        var base: Vector2 = a + d * (span * k)
-        draw_line(base, a + d * (span * (k + 0.16)) + trail * chord * (0.55 - 0.35 * k),
+        var base: Vector2 = a + dir * (span * k)
+        draw_line(base, a + dir * (span * (k + 0.16)) + trail * chord * (0.55 - 0.35 * k),
             col.darkened(0.15), 1.0)
     draw_line(a, t, col.lightened(0.3), 2.0)          # leading edge, reads as the bone
-    draw_circle(t, 2.5, col)
+    draw_circle(t, 2.5 * scale, col)
 
 
 ## Leg drawn as two bones with a knee. Depth reads through weight, not just colour:
 ## the far leg is thinner, shorter (foreshortened) and darker than the near one.
-func _draw_leg(a: Vector2, tip: Vector2, col: Color, lm: LimbDef) -> void:
-    var near: bool = lm.lane > 0
-    var thigh: float = lm.reach * 0.52
-    var shin: float = lm.reach * 0.52
-    var back_w: Vector2 = dir_to_world(Vector2(-1.0, 0.0))
-    var bend: Vector2 = to_local(back_w) - to_local(Vector2.ZERO)
-    var knee: Vector2 = _two_bone_knee(a, tip, thigh, shin, bend)
-    var w: float = 3.5 if near else 2.0
+func _draw_leg(a: Vector2, tip: Vector2, col: Color, d: float, lift: float,
+        lift_dir: Vector2, reach: float) -> void:
+    var near: bool = d >= 0.0
+    var lift_norm: float = clampf(lift, 0.0, 1.0)
+    var shadow_alpha: float = 0.22 * (1.0 - lift_norm)
+    if shadow_alpha > 0.005:
+        draw_circle(tip, 3.2 * (1.0 - 0.45 * lift_norm) * depth_layer.scale_for(d),
+            Color(0.0, 0.0, 0.0, shadow_alpha))
+
+    # Hidden height: raise the foot out of the surface, then fatten it a little. The shadow
+    # stays where the logic tip is, so the gap between foot and shadow reads as height.
+    var raised: Vector2 = tip
+    var lift_local: Vector2 = _view_dir(lift_dir)
+    if lift_local.length_squared() > 0.0001:
+        raised += lift_local.normalized() * (lift_norm * tune(&"step_height", 9.0))
+
+    var thigh: float = reach * 0.52
+    var shin: float = reach * 0.52
+    var bend: Vector2 = _view_dir(dir_to_world(Vector2(-1.0, 0.0)))
+    var knee: Vector2 = _two_bone_knee(a, raised, thigh, shin, bend)
+    var scale: float = depth_layer.scale_for(d) * (1.0 + 0.18 * lift_norm)
+    var w: float = (3.5 if near else 2.0) * scale
     draw_line(a, knee, col, w)
-    draw_line(knee, tip, col, w)
-    draw_circle(a, 2.0, col.darkened(0.25))
-    draw_circle(knee, 2.5 if near else 1.8, col.lightened(0.3))
+    draw_line(knee, raised, col, w)
+    draw_circle(a, 2.0 * scale, col.darkened(0.25))
+    draw_circle(knee, (2.5 if near else 1.8) * scale, col.lightened(0.3))
     # Short foot segment so the leg ends in a claw instead of a dot.
-    var shin_dir: Vector2 = (tip - knee).normalized()
+    var shin_dir: Vector2 = (raised - knee).normalized()
     if shin_dir.length_squared() > 0.0001:
-        var foot: Vector2 = tip + shin_dir.orthogonal() * (5.0 if near else 3.5)
-        draw_line(tip, foot, col, w)
+        var foot: Vector2 = raised + shin_dir.orthogonal() * (5.0 if near else 3.5) * scale
+        draw_line(raised, foot, col, w)
+    draw_circle(raised, 2.2 * scale, col)
 
 
 func _two_bone_knee(a: Vector2, tip: Vector2, thigh: float, shin: float, bend: Vector2) -> Vector2:
