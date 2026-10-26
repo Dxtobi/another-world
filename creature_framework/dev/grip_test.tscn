@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cfgriptest01"]
+
+[ext_resource type="Script" path="res://creature_framework/dev/grip_test.gd" id="1_griptest"]
+
+[node name="GripTest" type="Node2D"]
+script = ExtResource("1_griptest")

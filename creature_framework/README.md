@@ -6,11 +6,12 @@ A reusable framework for building **many different creatures with many different
 Inspired by the Rain World animation approach (GDC talk "The Rain World Animation Process"): a cheap, stable
 **logic layer** (points + distance constraints) decorated by a heavy **cosmetic layer** that only ever *reads* the logic.
 
-> **Status:** T0-T3 done. The framework lives inside the *Another World* project (`res://creature_framework/`),
+> **Status:** T0-T4 done. The framework lives inside the *Another World* project (`res://creature_framework/`),
 > runs on Godot 4.7.1, and is verified by a self-terminating 60 s scripted run (0 errors, 0 NaN, bounded speeds,
-> no single-frame pose pops), a world harness that checks the real level's drawn polygons and path grids, and a
-> flight harness that flies a slalom to a goal. Steps 1-3 (Body, Intent/Brain, LocoManager, FlyLocomotor, debug view,
-> world query, path following) are implemented; T4 is next.
+> no single-frame pose pops), a world harness that checks the real level's drawn polygons and path grids, a
+> flight harness that flies a slalom to a goal, and a grip harness that latches limbs onto a wall. Steps 1-4
+> (Body, Intent/Brain, LocoManager, FlyLocomotor, debug view, world query, path following, limb grips) are
+> implemented; T5 (climb locomotor) is next.
 
 Requires **Godot 4.7+** (developed against 4.7.1).
 
@@ -51,6 +52,7 @@ core/
   body.gd            Verlet points + distance constraints (the logic layer)
   world_query.gd     the creature's only view of the level (physics solids + air/surface path grids)
   path_follower.gd   goal -> next waypoint, with repathing and hole-free fallback
+  limb_system.gd     per-limb grip state: ray-fan grip search, fixed hold, over-reach release
   locomotor.gd       base class: score(), enter(), exit(), emit()
   loco_manager.gd    scoring + hysteresis + weighted crossfade
   move_output.gd     accumulates accelerations and limb targets, scaled by blend weight
@@ -61,13 +63,15 @@ brains/demo_brain.gd                  scripted brain for reproducible T0 runs
 dev/creature_test.tscn                one creature + HUD; 60 s self-terminating metrics run
 dev/world_test.tscn                   T2 harness: real-level oracle, dive test, path grids (exits non-zero)
 dev/path_test.tscn                    T3 harness: up-and-down slalom flight to a goal (exits non-zero)
+dev/grip_test.tscn                    T4 harness: wall latch, thin air, reach limit, hold/release (exits non-zero)
 locomotors/fly_locomotor.gd           flight: flap lift + glide lift + path steering + wall feelers
 rigs/vulture_rig.gd                   3-point spine, 2 wings, 2 legs
 docs/DESIGN_NOTES.md                  algorithms and reference code for the remaining tasks
 ```
 
 Per-tick order (in `Creature._physics_process`):
-`brain.think -> path.update -> loco.update (emit forces) -> body.step -> world.resolve`. Cosmetics run in `_process`.
+`brain.think -> path.update -> limbs.update (drop over-extended grips) -> loco.update (emit forces; free limbs
+try to grip) -> body.step -> world.resolve`. Cosmetics run in `_process`.
 
 ### Debug view (dev aid; deleted when T7/T9 art lands)
 Circles and lines only, but it has to carry the read until then:
@@ -79,6 +83,8 @@ Circles and lines only, but it has to carry the read until then:
 - **Leg**: two bones (`0.52 * reach` each) with the knee placed by the law of cosines, bending backwards. The far leg
   is shorter (foreshortened), thinner and darker, and the two legs stride in antiphase, so it reads as two legs at
   different depths rather than one line copied.
+- **Grip**: a translucent green dot on the contact point, a bright core, and a short tick along the surface normal.
+  The limb tip is pinned to that dot, so "holding" reads even while the limb itself is still a line.
 - In `dev/creature_test.tscn`, **Z** toggles a 3.2× camera that follows the creature.
 
 ---
@@ -173,10 +179,32 @@ Read `docs/DESIGN_NOTES.md` for the algorithms referenced below.
   it across creatures. `path_clearance` is bake-time, so a much larger creature needs its own bake or a larger
   clearance.
 
-### T4. LimbSystem: grips
+### T4. LimbSystem: grips  ✅ done
 - Create `core/limb_system.gd`: per limb `gripping`, `grip_pos`, `max_reach`. Implement random-sample grip scoring
   (see DESIGN_NOTES "Grip scoring"). Draw grips in the debug view.
 - **Accept:** a limb latches onto nearby wall tiles, releases when over-extended, and never latches onto thin air.
+- **Done:** `core/limb_system.gd` keeps per-limb `gripping` / `grip_pos` / `grip_normal`, with
+  `max_reach = limb.reach * 1.25`. Each free limb gets one attempt every 0.06 s (staggered so four limbs never fan
+  their rays on the same tick): **7 rays fanned ±26°** around the direction to the ideal tip, from
+  `anchor + 14 px` out to `max_reach`, filtered to terrain by `WorldQuery.is_terrain` — the same rule as
+  `is_solid`. The best ray wins on `|t| + 0.6 * |hit_dist - ideal_dist| / ideal_dist`: closest to the ideal line,
+  then closest to the ideal length. A ray is used instead of random samples around the tip because the locomotor's
+  ideal tip is frequently *inside* the wall the limb is reaching into; the ray stops at the face where a real limb
+  would touch it. `WorldQuery.surface_near(ideal, 10)` is the fallback for a surface beside the tip (a ledge the
+  limb reaches past). A grip is never re-scored while held — it is a fixed world point, so a limb cannot crawl along
+  a wall by itself — and releases only when `anchor.distance_to(grip_pos) > max_reach`. The grip is **cosmetic in
+  T4**: `Creature` pins `limb_tip[i]` to `grip_pos[i]`; T5 turns it into a body constraint. The debug view draws the
+  contact dot and its outward normal.
+  Verified by `dev/grip_test.tscn` (headless, exits non-zero on failure): a wall at x 340 and a block at x 600.
+  `surface_near` hits the wall face at **(340, 300), normal (-1, 0), distance 8** and finds nothing in thin air.
+  The near wing latches at **(340, 293), normal (-1, 0)**, 88 px from the anchor (max reach 118.8). Upward thin air
+  does not latch; a block 378 px away does not latch; the near leg (max reach 68.8) cannot reach the wall 129 px
+  away. A **+18 px** body move keeps the grip fixed at the same world point; **+200 px** releases it; on the next
+  tick the tip is still pinned to the grip.
+
+  ```
+  godot --headless --path . res://creature_framework/dev/grip_test.tscn
+  ```
 
 ### T5. ClimbLocomotor
 - `locomotors/climb_locomotor.gd`: body pulled toward the grip centroid, limb gait rule (>= 2 other limbs holding
@@ -264,7 +292,7 @@ Do this after locomotion (T2-T6) is proven, so the authoring layer is built on a
 - [x] T1 smooth facing
 - [x] T2 real world (platform grids)
 - [x] T3 path following and avoidance
-- [ ] T4 limb grips
+- [x] T4 limb grips
 - [ ] T5 climb locomotor
 - [ ] T6 mode switching
 - [ ] T7 depth layer

@@ -105,24 +105,39 @@ Acceptance (`dev/path_test.tscn`): a synthetic slalom that forces UP over wall A
 over A at `min y 166.5` (wall top 220), under B at `max y 448.1` (wall bottom 380), goal in 13.9 s, closest
 approach 0.2 px, 0 body points in terrain, 150 repaths over 45 s. With no grid the follower returns the raw goal.
 
-## 3. Grip scoring (T4)
+## 3. Grip scoring (implemented in LimbSystem)
+
+Grips are found **along the limb**, not by sampling around the ideal tip:
 
 ```
-func try_grip(limb, ideal: Vector2, samples: int):
-    var best = limb.grip_pos if limb.gripping else null
-    var best_score = score(limb.grip_pos, ideal) if limb.gripping else -INF
-    for i in samples:                                   # 6-8 normally, 16 while landing
-        var cand = ideal + Vector2(randf_range(-1,1), randf_range(-1,1)) * 40.0
-        var s = score(cand, ideal)
-        if s > best_score: best_score = s; best = cand
-    limb.gripping = best_score > -INF
-    if limb.gripping: limb.grip_pos = best
-
-func score(p, ideal):
-    if not world.is_solid_adjacent(p): return -INF      # thin air
-    return -p.distance_to(ideal)                        # closer to ideal reach point = better
+reach = limb.reach * 1.25
+base  = (ideal - anchor).normalized()
+for k in 7:                                            # one ray exactly on the ideal line
+    t    = k / 6.0 * 2.0 - 1.0                         # -1..+1 across the fan
+    dir  = base.rotated(deg_to_rad(26) * t)
+    hit  = ray(anchor + dir * 14, anchor + dir * reach) # terrain only
+    if hit:
+        score = abs(t) + 0.6 * abs(hit_dist - ideal_dist) / ideal_dist
+latch the lowest score
+if no ray hit: try world.surface_near(ideal, 10)
 ```
-Release a grip when `anchor.distance_to(grip_pos) > max_reach`.
+
+Why rays along the limb instead of random samples near the ideal tip: the ideal tip is often **inside**
+the wall the limb is reaching into, because the locomotor does not know where the face is. A ray from
+the anchor stops at the face where a real limb would touch it and returns that face's outward normal;
+a sample inside the polygon is not a handhold. The fan covers overshoot and corners, while the `|t|`
+term stops a limb grabbing a side wall when the centre line is free.
+
+Why the fallback: a ledge *beside* the tip (the limb swings past it) is outside the fan. `surface_near`
+casts 16 rays around the ideal point and refuses points inside terrain, so it cannot invent a grip.
+
+Holding:
+- The grip is a fixed world point and is **not re-scored**: a held limb cannot creep along a wall by itself.
+- Release when `anchor.distance_to(grip_pos) > reach`, or by an explicit `release()`. That distance is the only
+  automatic release; T5's gait rule releases the limb furthest behind the travel direction before it gets there.
+- Attempts are throttled to one per limb every 0.06 s (staggered), so four limbs do not fan rays on the same tick.
+- T4 is cosmetic: `Creature` pins `limb_tip` to the grip. Turning the grip into a body constraint is T5's job
+  (`grip_centroid` in section 4).
 
 ## 4. Climbing (T5)
 

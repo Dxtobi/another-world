@@ -19,6 +19,8 @@ extends RefCounted
 ## Hard cap on collision sweep samples, so a teleport cannot stall a tick.
 const MAX_SWEEP_STEPS := 12
 const DEPENETRATE_STEPS := 6
+## Rays cast around a point when looking for a nearby surface to grip.
+const SURFACE_PROBES := 16
 
 ## Safety box in world pixels. Outside = solid.
 var bounds: Rect2 = Rect2(0.0, 0.0, 1280.0, 680.0)
@@ -73,6 +75,48 @@ func is_solid_point(p: Vector2) -> bool:
 ## anything that can move are not floor.
 static func is_terrain(obj: Object) -> bool:
     return obj is StaticBody2D
+
+
+## A surface found near a point: where it is, which way it faces, and how far away it was.
+class SurfaceHit:
+    var pos: Vector2 = Vector2.ZERO
+    var normal: Vector2 = Vector2.UP
+    var distance: float = 0.0
+
+
+## Nearest terrain surface within `radius` of `p`, or null for thin air.
+##
+## Casts `SURFACE_PROBES` rays outward in a circle (terrain is filtered by `is_terrain`,
+## same rule as `is_solid`). A ray gives both the contact point and an outward normal, which
+## is exactly what a limb needs to know where to hold. A point already inside terrain returns
+## null: a grip tip belongs on the surface, not buried in it.
+func surface_near(p: Vector2, radius: float) -> SurfaceHit:
+    if space_state == null or radius <= 0.0:
+        return null
+    var q: PhysicsRayQueryParameters2D = PhysicsRayQueryParameters2D.create(p, p, solid_mask, [])
+    q.collide_with_areas = false
+    q.collide_with_bodies = true
+    q.hit_from_inside = false
+
+    var best: SurfaceHit = null
+    for k in SURFACE_PROBES:
+        q.to = p + Vector2.from_angle(TAU * float(k) / float(SURFACE_PROBES)) * radius
+        var hit: Dictionary = space_state.intersect_ray(q)
+        if hit.is_empty() or not is_terrain(hit.get("collider")):
+            continue
+        var hit_pos: Vector2 = hit["position"]
+        var d: float = p.distance_to(hit_pos)
+        if best == null or d < best.distance:
+            best = SurfaceHit.new()
+            best.pos = hit_pos
+            best.normal = hit.get("normal", Vector2.ZERO)
+            best.distance = d
+    return best
+
+
+## True when there is terrain within `radius` of `p` (a limb could hold here).
+func is_solid_adjacent(p: Vector2, radius: float = 10.0) -> bool:
+    return surface_near(p, radius) != null
 
 
 # ---------------------------------------------------------------- resolve

@@ -11,6 +11,8 @@ var world: WorldQuery
 ## Turns the goal into the next waypoint a locomotor should steer at. Never writes the
 ## intent: the brain stays the only thing that decides *where* to go.
 var path: PathFollower = null
+## Grip state per limb. Cosmetic in T4 (it pins limb tips); the forces come in T5.
+var limbs: LimbSystem = null
 var intent: Intent = Intent.new()
 var out: MoveOutput = MoveOutput.new()
 
@@ -35,6 +37,8 @@ func setup(p_rig: CreatureRig, p_brain: Brain, p_world: WorldQuery, origin: Vect
     path = PathFollower.new(world)
     loco = LocoManager.new()
     loco.setup(self, rig.locomotors)
+    limbs = LimbSystem.new()
+    limbs.setup(rig, world, self)
     limb_tip.resize(rig.limbs.size())
     for i in rig.limbs.size():
         limb_tip[i] = anchor_pos(i)
@@ -50,12 +54,19 @@ func _physics_process(dt: float) -> void:
         path.update(body.pos[rig.front_point], intent.goal, intent.has_goal, dt)
     if absf(intent.look_dir.x) > 0.01:
         facing = Steering.damp_f(facing, signf(intent.look_dir.x), tune(&"facing_rate", 9.0), dt)
+    limbs.update(dt)
     out.reset(body.pos.size(), rig.limbs.size())
     loco.update(dt, intent, out)
     for i in body.pos.size():
         body.add_accel(i, out.accels[i])
     for i in rig.limbs.size():
         limb_tip[i] = out.get_limb_target(i, anchor_pos(i))
+        # Free limbs look for a handhold where the locomotor wanted the tip. A limb that
+        # finds one is pinned to the surface instead of following the swing.
+        if not limbs.is_gripping(i):
+            limbs.try_grip(i, limb_tip[i])
+        if limbs.is_gripping(i):
+            limb_tip[i] = limbs.grip_pos[i]
     body.step(dt)
     world.resolve(body)
 
@@ -146,6 +157,17 @@ func _draw() -> void:
         else:
             _draw_leg(a, t, col, lm)
             draw_circle(t, 2.5, col)
+
+    # Grips: a bright dot on the surface plus a tick along its outward normal, so "holding"
+    # reads even while the limb itself is still a line.
+    for i in rig.limbs.size():
+        if limbs == null or not limbs.is_gripping(i):
+            continue
+        var g: Vector2 = to_local(limbs.grip_pos[i])
+        var gn: Vector2 = limbs.grip_normal[i]
+        draw_circle(g, 4.5, Color(0.2, 0.9, 0.45, 0.55))
+        draw_circle(g, 2.2, Color(0.85, 1.0, 0.9))
+        draw_line(g, g + gn * 9.0, Color(0.45, 1.0, 0.65, 0.8), 1.5)
 
     if path != null and path.has_path():
         var col: Color = Color(0.45, 1.0, 0.75, 0.55)
