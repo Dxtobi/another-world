@@ -15,6 +15,9 @@ var out: MoveOutput = MoveOutput.new()
 var thrust: float = 0.0
 var flap_phase: float = 0.0
 var turn_rate: float = 0.0
+## Damped facing in -1..+1. Sign = direction, |value| = how committed; it passes
+## smoothly through 0 on a reversal (the edge-on turn) instead of snapping.
+var facing: float = 1.0
 var limb_tip: PackedVector2Array = PackedVector2Array()
 
 var debug_draw: bool = true
@@ -37,6 +40,8 @@ func _physics_process(dt: float) -> void:
     if body == null:
         return
     brain.think(self, intent, dt)
+    if absf(intent.look_dir.x) > 0.01:
+        facing = Steering.damp_f(facing, signf(intent.look_dir.x), tune(&"facing_rate", 9.0), dt)
     out.reset(body.pos.size(), rig.limbs.size())
     loco.update(dt, intent, out)
     for i in body.pos.size():
@@ -62,13 +67,17 @@ func spine_dir() -> Vector2:
 
 
 ## Convert a vector in the spine frame (+x forward, +y belly) to world space.
-## Mirrors vertically when facing left so "belly" stays down.
+## Uses the damped `facing` value rather than a hard spine-sign test: a reversal
+## passes through edge-on (x collapses to 0) and pitch fades out with it, so
+## limbs foreshorten instead of mirroring in one frame.
 func dir_to_world(local_dir: Vector2) -> Vector2:
     var d: Vector2 = spine_dir()
-    var v: Vector2 = local_dir
-    if d.x < 0.0:
-        v.y = -v.y
-    return v.rotated(d.angle())
+    var f: Vector2 = d.normalized() if d.length_squared() > 0.0001 else Vector2(facing, 0.0)
+    # Pitch in the facing frame. atan2 against the facing-mirrored vector stays
+    # continuous through vertical (no wrap seam at +-90 degrees, which the spine
+    # crosses on hard climbs).
+    var pitch: float = atan2(f.y * facing, f.x * facing) * absf(facing)
+    return Vector2(local_dir.x * facing, local_dir.y).rotated(pitch)
 
 
 func anchor_pos(limb_index: int) -> Vector2:

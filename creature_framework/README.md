@@ -6,9 +6,10 @@ A reusable framework for building **many different creatures with many different
 Inspired by the Rain World animation approach (GDC talk "The Rain World Animation Process"): a cheap, stable
 **logic layer** (points + distance constraints) decorated by a heavy **cosmetic layer** that only ever *reads* the logic.
 
-> **Status:** T0 done. The framework lives inside the *Another World* project (`res://creature_framework/`),
-> runs on Godot 4.7.1, and is verified by a 60 s scripted run (0 errors, 0 NaN, bounded speeds).
-> Steps 1-3 (Body, Intent/Brain, LocoManager, FlyLocomotor, debug view) are implemented; T1 is next.
+> **Status:** T0 and T1 done. The framework lives inside the *Another World* project (`res://creature_framework/`),
+> runs on Godot 4.7.1, and is verified by a self-terminating 60 s scripted run (0 errors, 0 NaN, bounded speeds,
+> no single-frame pose pops). Steps 1-3 (Body, Intent/Brain, LocoManager, FlyLocomotor, debug view) are implemented;
+> T2 is next.
 
 Requires **Godot 4.7+** (developed against 4.7.1).
 
@@ -82,10 +83,16 @@ Read `docs/DESIGN_NOTES.md` for the algorithms referenced below.
   drag; (b) a sign inversion in that hold term pinned the creature to the floor while climbing. Both are in
   `FlyLocomotor` only; `core/` was not touched.
 
-### T1. Facing without popping
+### T1. Facing without popping  ✅ done
 - Replace the instant left/right flip in `Creature.dir_to_world()` with a smoothed `facing` value
   (damped toward `intent.look_dir.x`). Use it wherever a mirror is needed.
 - **Accept:** reversing direction does not make wings/legs jump in one frame.
+- **Done:** `Creature.facing` (-1..+1) is damped toward `look_dir.x` at `facing_rate` (9.0, tunable). It passes
+  through 0 — the edge-on view — so the x component foreshortens instead of mirroring, and pitch is derived with
+  `atan2` in the facing frame (continuous through vertical; a `wrapf` version created a new seam at ±90°).
+  Measured single-frame limb-tip jumps over the 60 s run: old mirror **153.9 px** wings / **85.3 px** legs at every
+  reversal; now ~70 px wings (that peak also occurs with facing held steady, i.e. it is flap speed, not a pop)
+  and ~26 px legs. Dev scene prints `tipjump` and `facing`, and logs `BIGJUMP` above 80 px.
 
 ### T2. Real world: the game's platforms
 - Make `WorldQuery` read the game's actual level instead of a box: `is_solid(p)` via physics point/ray queries
@@ -160,8 +167,8 @@ Read `docs/DESIGN_NOTES.md` for the algorithms referenced below.
 
 ### Task checklist
 - [x] T0 run and fix
-- [ ] T1 smooth facing
-- [ ] T2 tilemap world and grids
+- [x] T1 smooth facing
+- [ ] T2 real world (platform grids)
 - [ ] T3 path following and avoidance
 - [ ] T4 limb grips
 - [ ] T5 climb locomotor

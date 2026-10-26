@@ -91,8 +91,9 @@ func _emit_limbs(out: MoveOutput, wing_amp: float) -> void:
             var amp: float = wing_amp * (0.35 + 0.65 * c.thrust)
             var swing: float = sin(c.flap_phase - float(lm.lane) * 0.25) * amp
             # Sweep back through up and down, so the debug lines read as a beat
-            # (straight up looked like antennae).
-            var wing_dir: Vector2 = Vector2.from_angle(PI + swing)
+            # (straight up looked like antennae). The lane fan keeps the near and
+            # far wing from collapsing into one line.
+            var wing_dir: Vector2 = Vector2.from_angle(PI + swing + float(lm.lane) * 0.22)
             out.set_limb_target(i, anchor + c.dir_to_world(wing_dir) * lm.reach)
         elif lm.kind == &"leg":
             var leg_dir: Vector2 = Vector2(-0.45, 1.0).normalized()   # dangle down and back
