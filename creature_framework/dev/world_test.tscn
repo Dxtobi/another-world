@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cfworldtest01"]
+
+[ext_resource type="Script" path="res://creature_framework/dev/world_test.gd" id="1_worldtest"]
+
+[node name="WorldTest" type="Node2D"]
+script = ExtResource("1_worldtest")

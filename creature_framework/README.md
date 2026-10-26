@@ -6,10 +6,10 @@ A reusable framework for building **many different creatures with many different
 Inspired by the Rain World animation approach (GDC talk "The Rain World Animation Process"): a cheap, stable
 **logic layer** (points + distance constraints) decorated by a heavy **cosmetic layer** that only ever *reads* the logic.
 
-> **Status:** T0 and T1 done. The framework lives inside the *Another World* project (`res://creature_framework/`),
+> **Status:** T0, T1 and T2 done. The framework lives inside the *Another World* project (`res://creature_framework/`),
 > runs on Godot 4.7.1, and is verified by a self-terminating 60 s scripted run (0 errors, 0 NaN, bounded speeds,
-> no single-frame pose pops). Steps 1-3 (Body, Intent/Brain, LocoManager, FlyLocomotor, debug view) are implemented;
-> T2 is next.
+> no single-frame pose pops) plus a world harness that checks the real level's drawn polygons and path grids.
+> Steps 1-3 (Body, Intent/Brain, LocoManager, FlyLocomotor, debug view) are implemented; T3 is next.
 
 Requires **Godot 4.7+** (developed against 4.7.1).
 
@@ -48,7 +48,7 @@ core/
   limb_def.gd         |
   creature_rig.gd    /
   body.gd            Verlet points + distance constraints (the logic layer)
-  world_query.gd     the creature's only view of the level (currently just a box)
+  world_query.gd     the creature's only view of the level (physics solids + air/surface path grids)
   locomotor.gd       base class: score(), enter(), exit(), emit()
   loco_manager.gd    scoring + hysteresis + weighted crossfade
   move_output.gd     accumulates accelerations and limb targets, scaled by blend weight
@@ -56,6 +56,8 @@ core/
   creature.gd        glue node + proxy variables + debug draw
 brains/mouse_brain.gd                 debug brain (goal = mouse)
 brains/demo_brain.gd                  scripted brain for reproducible T0 runs
+dev/creature_test.tscn                one creature + HUD; 60 s self-terminating metrics run
+dev/world_test.tscn                   T2 harness: real-level oracle, dive test, path grids (exits non-zero)
 locomotors/fly_locomotor.gd           flight: flap lift + glide lift + steering
 rigs/vulture_rig.gd                   3-point spine, 2 wings, 2 legs
 docs/DESIGN_NOTES.md                  algorithms and reference code for the remaining tasks
@@ -106,7 +108,7 @@ Read `docs/DESIGN_NOTES.md` for the algorithms referenced below.
   reversal; now ~70 px wings (that peak also occurs with facing held steady, i.e. it is flap speed, not a pop)
   and ~26 px legs. Dev scene prints `tipjump` and `facing`, and logs `BIGJUMP` above 80 px.
 
-### T2. Real world: the game's platforms
+### T2. Real world: the game's platforms  ✅ done
 - Make `WorldQuery` read the game's actual level instead of a box: `is_solid(p)` via physics point/ray queries
   against the `StaticBody2D`/`CollisionPolygon2D` platforms (`world/platform.gd`), keeping the same public API
   (`is_solid(p)`, `resolve(body)`). **No TileMapLayer** — this project hand-draws its level silhouettes.
@@ -115,6 +117,21 @@ Read `docs/DESIGN_NOTES.md` for the algorithms referenced below.
   `world.path_surface(from, to)`. Cell size and bake are `@export`/tuning values.
 - **Accept:** `is_solid` matches what is drawn; body points never end up inside a platform; paths exist where
   expected (around a tower, under a ceiling, along an overhang).
+- **Done:** `WorldQuery.attach(node)` binds to the level's physics space and `is_solid` is an
+  `intersect_point` query filtered to `StaticBody2D` on `solid_mask` (layer 1). The type filter matters: the player
+  is a `CharacterBody2D` on the same layer, so a layer test alone would make actors solid. `bounds` remains a safety
+  box (outside = solid), which also keeps the no-level dev scene working.
+  `resolve` now sub-samples the tick (max 12 steps, `point_radius/2` apart, so no tunnelling through a drawn
+  platform), bisects back to the boundary if a point starts inside, estimates an outward normal from 8 probes, and
+  projects velocity onto the tangent — so bodies slide instead of sticking. `bake(rect)` rasterises the air grid
+  (non-solid cells) and the surface grid (free cells with a solid 8-neighbour) from the same queries.
+  Verified by `dev/world_test.tscn` (headless, exits non-zero on failure):
+  `oracle samples=2493 mismatches=0`, `dive 7s violations=0`, air path over a tower and through a ceiling gap,
+  surface path along a floor, all with 0 solid waypoints.
+
+  ```
+  godot --headless --path . res://creature_framework/dev/world_test.tscn
+  ```
 
 ### T3. Path following and obstacle avoidance
 - Add a `PathFollower` helper: advance waypoints at ~24 px, repath every ~0.3 s or when the goal moves > 1 tile.
@@ -167,6 +184,37 @@ Read `docs/DESIGN_NOTES.md` for the algorithms referenced below.
 
 ---
 
+## Planned: editor authoring (after T6, before art)
+
+The point of the framework is that every creature is data, not code. The end state:
+
+```
+creature.tscn
+└─ Creature
+   ├─ Points          places with the mouse, names them
+   │  ├─ head      (mass 1.0, is_head)
+   │  ├─ chest     (mass 1.5)          <- "which part is heavier"
+   │  └─ tail      (mass 0.7)
+   ├─ Limbs           "add leg to chest"
+   │  ├─ wing_l  (kind=wing, style=flap,   lane=-1, reach=95)
+   │  ├─ wing_r  (kind=wing, style=flap,   lane=+1)
+   │  ├─ leg_l   (kind=leg,  style=walk2,  lane=-1)
+   │  └─ tent_1  (kind=limb, style=tentacle, segments=6)
+   ├─ Brain           per-creature movement pattern / behaviour
+   └─ Skin            one sprite child per point and limb
+```
+
+- Rigs stop being `VultureRig.build()` in GDScript and become a scene: `@tool` point/limb nodes you place, with
+  `CreatureRig` baked from them at runtime (`offset` = rest pose; the solver still owns the motion).
+- Limb `style` becomes a registry (`flap`, `walk2`, `reach`, `dangle`, `tentacle`), one small behaviour class each,
+  so "tentacle type of legs" is a choice in the inspector, not a new creature script.
+- Sprites are cosmetic children only. **Until a part has a sprite, the debug view draws its dot/line/square** — a
+  creature with no art is fully playable, and swapping in art cannot change how it moves.
+
+Do this after locomotion (T2-T6) is proven, so the authoring layer is built on a model that already works.
+
+---
+
 ## Conventions for AI agents working on this repo
 
 - Read this README and `docs/DESIGN_NOTES.md` before changing anything.
@@ -180,7 +228,7 @@ Read `docs/DESIGN_NOTES.md` for the algorithms referenced below.
 ### Task checklist
 - [x] T0 run and fix
 - [x] T1 smooth facing
-- [ ] T2 real world (platform grids)
+- [x] T2 real world (platform grids)
 - [ ] T3 path following and avoidance
 - [ ] T4 limb grips
 - [ ] T5 climb locomotor

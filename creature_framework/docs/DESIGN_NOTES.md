@@ -37,6 +37,37 @@ Hover thrust ~ gravity / (lift_k * 0.85) with the defaults above ≈ 0.85; `hove
 covers the rest, which keeps the pose lively instead of rigid.
 Steering acts on the FRONT point only; gravity/lift on all points, so the body trails into a bank for free.
 
+## 2b. World query: solids and path grids (implemented in WorldQuery)
+
+The level is hand-drawn: `StaticBody2D` + `CollisionPolygon2D`. There is no tilemap to read, so the physics space
+is the source of truth and the creature asks it directly.
+
+- **What is solid.** An `intersect_point` query on `solid_mask` (layer 1), filtered to `StaticBody2D`. The type
+  filter is not cosmetic: the player is a `CharacterBody2D` on the same layer in some scenes, so a layer test alone
+  would turn the player into floor. Areas (water) and projectiles never count.
+- **Safety box.** `bounds` is checked first and anything outside it is solid. With no physics space attached, the
+  box alone is the world — that is how the dev scene runs with no level loaded.
+- **resolve(body)**, per point, per tick:
+  1. **sweep** from `prev` to `pos` in sub-samples of `max(2, point_radius * 0.5)`, capped at 12 steps; stop at the
+     last free one. This is what stops a fast body passing through a drawn platform.
+  2. If the point is still inside, **depenetrate**: bisect back along the tick to the boundary (6 steps); if `prev`
+     was inside too (spawned in a wall), ring-probe 16 directions at 2..64 px for the nearest free spot.
+  3. **slide**: estimate the outward normal from 8 probes and project the remaining step onto the tangent, then
+     sweep that small slide once. Without this, touching the ground kills the whole step and the body sticks.
+  4. **bounds clamp** last, so nothing can escape the level box.
+  Velocity is rebuilt from the corrected position, removing only the component into the surface — the body slides,
+  it does not bounce.
+- **Grids** (`bake(rect)`): rasterised by asking `is_solid` at each cell centre, not by reading polygons.
+  `air` = non-solid cells. `surface` = non-solid cells with a solid 8-neighbour. `AStarGrid2D`, cell centres via
+  `cell_pos()`, `DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES`. `path_air` / `path_surface` return world-space waypoints and
+  an empty array if either end is blocked or outside the baked rect.
+- `get_point_position()` returns cell corners in this Godot, so paths use `cell_pos()` (centre) instead — do not
+  mix the two or every waypoint is half a cell off.
+
+Acceptance numbers (`dev/world_test.tscn`): 2493 lattice samples against an independent polygon oracle with
+**0 mismatches**; a vulture flown into the real ground for 7 s with **0 violations**; air routes over a tower and
+through a ceiling gap and a surface route along a floor, all with 0 solid waypoints.
+
 ## 3. Grip scoring (T4)
 
 ```
