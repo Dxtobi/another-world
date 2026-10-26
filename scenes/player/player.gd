@@ -1332,7 +1332,7 @@ func _dash_scan() -> void:
 				if String(m.name) == "take_damage":
 					arity = (m.args as Array).size()
 					break
-			var dmg := CommonEnemy.damage_for(node, global_position, dash_damage)
+			var dmg := Damage.damage_for(node, global_position, dash_damage)
 			if arity >= 4:
 				node.take_damage(dmg, global_position, dash_knockback, dash_stun)
 			elif arity >= 2:

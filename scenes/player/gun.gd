@@ -327,10 +327,10 @@ class Bullet extends Node2D:
 						arity = (m.args as Array).size()
 						break
 				if arity >= 4:
-					target.take_damage(CommonEnemy.damage_for(target, at, 1), at,
+					target.take_damage(Damage.damage_for(target, at, 1), at,
 							-1.0, -1.0)
 				elif arity >= 2:
-					target.take_damage(CommonEnemy.damage_for(target, at, 1), at)
+					target.take_damage(Damage.damage_for(target, at, 1), at)
 				else:
 					target.take_damage(1)
 			queue_free()
