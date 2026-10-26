@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cfplayground1"]
+
+[ext_resource type="Script" path="res://creature_framework/dev/playground.gd" id="1_playground"]
+
+[node name="Playground" type="Node2D"]
+script = ExtResource("1_playground")

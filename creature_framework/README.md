@@ -28,6 +28,8 @@ the wall and open air, so the vulture lands, climbs, launches off the wall and r
 locomotor, both blend weights, the grip count and the current phase.
 To author a creature, open `creature_framework/creatures/vulture.tscn`: the rig is a normal scene, and the
 **Validate rig** button in the inspector checks it before anything runs.
+To *try* a rig without touching code, open `creature_framework/dev/playground.tscn`, set its `rig_scene`
+to any authored scene, and press F6: the creature flies at the mouse, and **R** rebuilds it after you save.
 The game's own main scene is untouched.
 
 ---
@@ -89,6 +91,7 @@ dev/climb_demo.tscn                   T5 live demo: visible wall, oscillating go
 dev/mode_test.tscn                    T6 harness: land/climb/launch, flight-only, ambiguous goal (exits non-zero)
 dev/mode_demo.tscn                    T6 live demo: wall vs open-air goal, mode HUD + path overlay
 dev/authoring_test.tscn               authoring harness: scene bake, mutation, validation, runtime (exits non-zero)
+dev/playground.tscn                   no-code playground: exported rig scene + mouse goal + R rebuild
 locomotors/fly_locomotor.gd           flight: flap lift + glide lift + path steering + wall feelers
 locomotors/climb_locomotor.gd         climbing: grip-centroid body spring + hand-over-hand gait
 rigs/vulture_rig.gd                   loads `creatures/vulture.tscn` and bakes it (harness entry point)
@@ -369,9 +372,11 @@ inspector prints the result to the Output panel. It checks:
 - at least one locomotor is selected, with no unknown flag bits;
 - every `tuning` value is a finite number.
 
-`VultureRig.build()` is the thin loader every harness already calls: it loads the packed scene,
-instantiates it, validates, logs each error with a `VultureRig:` prefix, and returns the baked rig.
-No test or creature code needs to know that rigs come from scenes now.
+`RigBlueprint.load_rig(path, fresh := false)` is the no-code loader: it loads the packed scene,
+instantiates it, validates, logs each broken rule with the scene's name, and returns the baked rig (or
+`null`). `VultureRig.build()` is now a one-line wrapper around it, so every harness still works and no
+test or creature code needs to know that rigs come from scenes. `fresh` skips the resource cache, which
+is what lets the playground rebuild a scene you just saved without restarting the game.
 
 ### Inspectors and registries
 
@@ -396,19 +401,26 @@ The scene is small — the vulture spine is 80 px — so author at 2-4x zoom. No
 editor-only drawing, and it disappears in the game.
 
 A new creature is a copy of `creatures/vulture.tscn`: rename the root, move/add points, add limbs under
-their anchor points, pick locomotor flags, and add a loader like `VultureRig` (or point the harness at the
-scene directly). No `core/` change.
+their anchor points, pick locomotor flags, and you are done — **no code**. Open
+`dev/playground.tscn`, set its `rig_scene` to your scene in the inspector, press F6, and the creature
+flies at the mouse. **R** rebuilds the rig in place after you save it. The playground also exports
+`spawn`, `path_clearance` (58 px suits an 80 px spine) and `show_path`. No `core/` change.
+
+`RigBlueprint.load_rig()` is the only API involved: any scene that needs a specific creature (a demo, a
+test, a level spawner) calls it with a path. `rigs/` is now just stable names for the creatures that
+already have harnesses (`VultureRig.build()`).
 
 ```
 godot --headless --path . res://creature_framework/dev/authoring_test.tscn
 ```
 
-`dev/authoring_test.tscn` is the acceptance gate: 47 checks across four groups — the scene bakes to the
+`dev/authoring_test.tscn` is the acceptance gate: 50 checks across four groups — the scene bakes to the
 exact reference vulture (3 points, 2 spine links + 1 brace, 4 limbs, anchors, styles, front/centre/rear,
-locomotor order), edits to nodes reach the bake (the scene really is the source of truth), invalid rigs
-are rejected (missing point, bad style, lane 0, orphan limb, self link, no locomotor), and a creature
-built from the loader moves 172 px in 2.5 s with 0 NaN points. `grip_test`, `climb_test`, `path_test`,
-`world_test` and `mode_test` all still pass unchanged against the scene-loaded rig.
+locomotor order), `load_rig()` returns that same rig, edits to nodes reach the bake (the scene really is
+the source of truth), invalid rigs are rejected (missing point, bad style, lane 0, orphan limb, self
+link, no locomotor), and a creature built through the loader moves 172 px in 2.5 s with 0 NaN points.
+`grip_test`, `climb_test`, `path_test`, `world_test` and `mode_test` all still pass unchanged against the
+scene-loaded rig.
 
 
 ---

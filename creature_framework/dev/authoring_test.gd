@@ -32,6 +32,7 @@ class GoalBrain extends Brain:
 
 func _ready() -> void:
     _check_scene()
+    _check_loader()
     _check_mutation()
     _check_validation()
     await _check_runtime()
@@ -122,6 +123,18 @@ func _check_scene() -> void:
     _expect(LimbStyleCatalog.bone_hint(&"tentacle") == 6, "tentacle style hints 6 bones")
 
     bp.free()
+
+
+# ---------------------------------------------------------------- scene loader
+
+func _check_loader() -> void:
+    var rig: CreatureRig = RigBlueprint.load_rig(SCENE)
+    _expect(rig != null, "RigBlueprint.load_rig() loads the authored scene")
+    if rig == null:
+        return
+    _expect(rig.points.size() == 3 and rig.limbs.size() == 4,
+        "load_rig() returns the baked scene rig")
+    _expect(rig.locomotors.size() == 2, "load_rig() keeps the locomotor choices")
 
 
 # ---------------------------------------------------------------- source of truth

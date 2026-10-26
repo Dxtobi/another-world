@@ -216,6 +216,40 @@ func build_rig() -> CreatureRig:
     return rig
 
 
+## Load a rig SCENE and bake it, logging exactly which rules it broke.
+##
+## This is the no-code entry point: a dev scene only needs a scene path (`dev/playground.tscn`
+## exports one), and every harness keeps its own one-line wrapper (`VultureRig.build()`).
+## `fresh` bypasses the resource cache so the playground can pick up a scene just saved in the
+## editor without restarting the game.
+static func load_rig(scene_path: String, fresh: bool = false) -> CreatureRig:
+    var cache_mode: int = ResourceLoader.CACHE_MODE_REUSE
+    if fresh:
+        cache_mode = ResourceLoader.CACHE_MODE_IGNORE
+    var packed: PackedScene = ResourceLoader.load(scene_path, "", cache_mode) as PackedScene
+    if packed == null:
+        push_error("RigBlueprint: cannot load '%s'" % scene_path)
+        return null
+
+    var root: Node = packed.instantiate()
+    if not (root is RigBlueprint):
+        push_error("RigBlueprint: '%s' root is not a RigBlueprint" % scene_path)
+        root.free()
+        return null
+
+    var blueprint: RigBlueprint = root as RigBlueprint
+    var errors: PackedStringArray = blueprint.validate()
+    if not errors.is_empty():
+        for error in errors:
+            push_error("RigBlueprint '%s': %s" % [scene_path.get_file(), error])
+        root.free()
+        return null
+
+    var rig: CreatureRig = blueprint.build_rig()
+    root.free()
+    return rig
+
+
 func _validate_from_editor() -> void:
     var errors: PackedStringArray = validate()
     if errors.is_empty():

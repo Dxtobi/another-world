@@ -260,8 +260,19 @@ No art until T7, so the vector debug view carries the read. Formulas worth keepi
 
 ## 8. Authoring a creature as a scene
 
-The baker is a one-way translation, scene -> `CreatureRig`. Nothing in `core/` knows that a scene exists; every
-harness still asks `VultureRig.build()` for a `CreatureRig` and gets one.
+The baker is a one-way translation, scene -> `CreatureRig`. Nothing in `core/` knows that a scene exists. The entry
+point is static: `RigBlueprint.load_rig(path, fresh := false)` loads and instantiates the packed scene, runs
+`validate()`, logs every broken rule with the scene's file name, and returns the baked `CreatureRig` (or `null`).
+`fresh` uses `CACHE_MODE_IGNORE` instead of `CACHE_MODE_REUSE`, so a scene saved in the editor can be rebuilt
+without restarting the game. `VultureRig.build()` is now a one-line wrapper around it, so every harness still asks
+for a `CreatureRig` and gets one, and no test knows a scene path.
+
+The no-code authoring loop is `dev/playground.tscn` + `dev/playground.gd`: a small floor/wall/ledge level with an
+exported `rig_scene` (default: the vulture), `spawn`, `path_clearance` and `show_path`. It bakes the level into
+`WorldQuery`, follows the creature with a camera, drives it with `MouseBrain`, and draws the goal plus the current
+A* path; the HUD shows the rig name, point/limb counts, active locomotor and blend weights, grip count and goal
+distance. **R** calls `load_rig(rig_scene, true)` again, so the edit-save-rebuild loop needs no code at all. A new
+creature is therefore: duplicate a rig scene, shape it in the inspector, point the playground's `rig_scene` at it.
 
 | Scene | Baked into |
 | --- | --- |
