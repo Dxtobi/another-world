@@ -6,13 +6,14 @@ A reusable framework for building **many different creatures with many different
 Inspired by the Rain World animation approach (GDC talk "The Rain World Animation Process"): a cheap, stable
 **logic layer** (points + distance constraints) decorated by a heavy **cosmetic layer** that only ever *reads* the logic.
 
-> **Status:** T0-T5 done. The framework lives inside the *Another World* project (`res://creature_framework/`),
+> **Status:** T0-T6 done. The framework lives inside the *Another World* project (`res://creature_framework/`),
 > runs on Godot 4.7.1, and is verified by a self-terminating 60 s scripted run (0 errors, 0 NaN, bounded speeds,
 > no single-frame pose pops), a world harness that checks the real level's drawn polygons and path grids, a
-> flight harness that flies a slalom to a goal, a grip harness that latches limbs onto a wall, and a climb
-> harness that crawls a wall hand-over-hand and sags with no grips. Steps 1-5 (Body, Intent/Brain, LocoManager,
-> FlyLocomotor, debug view, world query, path following, limb grips, climb locomotor) are implemented; T6
-> (mode switching and transitions) is next.
+> flight harness that flies a slalom to a goal, a grip harness that latches limbs onto a wall, a climb
+> harness that crawls a wall hand-over-hand and sags with no grips, and a mode harness that lands, climbs,
+> launches and refuses to switch when the goal is in open air. Steps 1-6 (Body, Intent/Brain, LocoManager,
+> FlyLocomotor, debug view, world query, path following, limb grips, climb locomotor, mode switching) are
+> implemented; the editor-authoring layer and T7 (depth) are next.
 
 Requires **Godot 4.7+** (developed against 4.7.1).
 
@@ -21,6 +22,9 @@ It runs the scripted `DemoBrain` (climb / hover / sink / bank, 6 s each) with me
 console. Set the environment variable `CF_MOUSE=1` to chase the cursor with `MouseBrain` instead.
 For the T5 climb read, open `creature_framework/dev/climb_demo.tscn` and press F6: a vulture clings to
 a wall while the goal slides up and down it, with the grip count in the HUD.
+For the T6 mode read, open `creature_framework/dev/mode_demo.tscn` and press F6: the goal alternates between
+the wall and open air, so the vulture lands, climbs, launches off the wall and returns. The HUD shows the active
+locomotor, both blend weights, the grip count and the current phase.
 The game's own main scene is untouched.
 
 ---
@@ -69,6 +73,8 @@ dev/path_test.tscn                    T3 harness: up-and-down slalom flight to a
 dev/grip_test.tscn                    T4 harness: wall latch, thin air, reach limit, hold/release (exits non-zero)
 dev/climb_test.tscn                   T5 harness: wall climb, gait cycle, sway, no-grip sag (exits non-zero)
 dev/climb_demo.tscn                   T5 live demo: visible wall, oscillating goal, HUD grip count
+dev/mode_test.tscn                    T6 harness: land/climb/launch, flight-only, ambiguous goal (exits non-zero)
+dev/mode_demo.tscn                    T6 live demo: wall vs open-air goal, mode HUD + path overlay
 locomotors/fly_locomotor.gd           flight: flap lift + glide lift + path steering + wall feelers
 locomotors/climb_locomotor.gd         climbing: grip-centroid body spring + hand-over-hand gait
 rigs/vulture_rig.gd                   3-point spine, 2 wings, 2 legs
@@ -238,10 +244,38 @@ Read `docs/DESIGN_NOTES.md` for the algorithms referenced below.
   godot --headless --path . res://creature_framework/dev/climb_test.tscn
   ```
 
-### T6. Mode switching and transitions
+### T6. Mode switching and transitions  ✅ done
 - `FlyLocomotor.score` / `ClimbLocomotor.score` use `WorldQuery` (surface adjacent? goal climb-reachable? grips lost?).
 - Add launch impulse (climb -> fly) and landing window with more grip samples (fly -> climb). See DESIGN_NOTES.
 - **Accept:** three goals behave sensibly: climb-only spot, flight-only spot, ambiguous spot. No flicker between modes.
+- **Done:** `ClimbLocomotor` scores **2.0** while gripping when the goal is climbable and **0.25** when the goal has
+  left the surface (so flight's 1.0 wins). With no grips it scores **1.8** when a face is within
+  `climb_land_radius` (46 px) **and** the goal touches terrain within `climb_goal_radius` (52 px) **and** the
+  surface grid connects the body to the goal; otherwise 0. `LocoManager` keeps 0.25 stickiness, a 0.5 s switch
+  lock and a 0.35 s crossfade, so the transition is a short blend rather than a pop.
+  Grid reachability is cached for 12 physics frames and invalidated when the goal moves > 24 px, because A* must
+  not run every tick. Scoring probes the **head first** and the centre second: flight steers by the head, so a
+  flyer hovering at a wall goal has its head on the face and its centre a body-length back.
+  Entering climb bleeds speed above 60 px/s to 40 % (so the body does not spear into the face) and opens a
+  0.4 s landing window: every free limb attempts every tick with **16 rays over ±34°** instead of the usual 7
+  rays / 0.06 s. Entering fly from a grip adds a **120 px/s** impulse along the average grip normal, releases all
+  grips with a 0.3 s re-grip lockout, and sets `thrust = 1`.
+  Verified by `dev/mode_test.tscn` (headless, exits non-zero on failure): the
+  climb-only goal gives **exactly 1** switch (fly -> climb), reaches in **4.08 s** while climbing, closest
+  **29.4 px**, **4** grips; moving that goal into open air gives **exactly 1** switch back (climb -> fly), reaches
+  in **9.38 s**, launch `vx -96.8` with **0** grips. The flight-only goal gives **0** switches and reaches in
+  **8.00 s**. The ambiguous goal (wall and air routes both exist) chooses climb, **1** switch, reaches in
+  **3.35 s** with **4** grips. All three have **0** body points inside terrain.
+  The harness bakes `path_clearance = 58` because the vulture's spine is 80 px; the default 34 px is tuned for a
+  point and let the body wedge on tall wall corners. Per-creature clearance belongs to the shared level bake in
+  T11.
+  `dev/mode_demo.tscn` shows the whole cycle live (MCP run at 1152x648): fly -> climb at **2.4 s** with 1 grip,
+  4/4 grips while climbing, climb -> fly at **4.3 s** (`vx -101.1`, 0 grips), fly -> climb again on the return,
+  no game-log errors.
+
+  ```
+  godot --headless --path . res://creature_framework/dev/mode_test.tscn
+  ```
 
 ### T7. Depth layer: make 2D feel 3D
 - `core/depth.gd`: `yaw` as an angle (damped toward facing), `squash = cos(yaw)` clamped away from 0,
@@ -321,7 +355,7 @@ Do this after locomotion (T2-T6) is proven, so the authoring layer is built on a
 - [x] T3 path following and avoidance
 - [x] T4 limb grips
 - [x] T5 climb locomotor
-- [ ] T6 mode switching
+- [x] T6 mode switching
 - [ ] T7 depth layer
 - [ ] T8 smoothness pass
 - [ ] T9 cosmetics and off-screen switch

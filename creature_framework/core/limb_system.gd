@@ -2,9 +2,9 @@ class_name LimbSystem
 extends RefCounted
 ## Per-limb grip state: is this limb holding a surface, where, and which way does it face.
 ##
-## T4 is **cosmetic-only**: a gripping limb's tip is pinned to `grip_pos`, and the debug view
-## draws that point. The grip becomes a physical constraint in T5, so nothing here touches
-## the body yet.
+## Grips are logic: the debug view draws `grip_pos`, the limb tip is pinned to it, and
+## ClimbLocomotor pulls the body toward the grip centroid. T6 adds a short landing window
+## (more rays, an attempt every tick) so a moving flyer can catch a face on the transition.
 ##
 ## How a grip is found: `SAMPLES` short rays are fanned out along the limb from its anchor,
 ## toward the tip the locomotor asked for. A ray hit gives both a contact point and an outward
@@ -32,6 +32,10 @@ const MIN_HOLD := 14.0
 ## Seconds between attempts for a limb that is not holding anything (staggered per limb, so
 ## four limbs never fan their rays on the same tick).
 const ATTEMPT_INTERVAL := 0.06
+## A landing (fly -> climb) is a short burst: every free limb tries every tick with a wider
+## fan, so a moving flyer catches the face instead of sailing past it.
+const LANDING_SAMPLES := 16
+const LANDING_SPREAD := 34.0
 
 var rig: CreatureRig = null
 var world: WorldQuery = null
@@ -44,6 +48,7 @@ var grip_pos: PackedVector2Array = PackedVector2Array()
 var grip_normal: PackedVector2Array = PackedVector2Array()
 
 var _cooldown: PackedFloat32Array = PackedFloat32Array()
+var _landing: float = 0.0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
@@ -69,6 +74,7 @@ func setup(p_rig: CreatureRig, p_world: WorldQuery, p_creature: Creature, seed_v
 ## Per-tick housekeeping: age the attempt cooldowns and drop grips the body has walked away
 ## from. Call before locomotor output so a released limb is free to be re-targeted this tick.
 func update(dt: float) -> void:
+    _landing = maxf(0.0, _landing - dt)
     for i in rig.limbs.size():
         if _cooldown[i] > 0.0:
             _cooldown[i] = maxf(0.0, _cooldown[i] - dt)
@@ -76,12 +82,24 @@ func update(dt: float) -> void:
             release(i)
 
 
+## Open a landing window: every free limb may attempt on every tick, with `LANDING_SAMPLES`
+## rays across a wider fan. Called by ClimbLocomotor on entry; `end_landing` on exit.
+func begin_landing(duration: float) -> void:
+    _landing = maxf(_landing, duration)
+    for i in rig.limbs.size():
+        _cooldown[i] = 0.0
+
+
+func end_landing() -> void:
+    _landing = 0.0
+
+
 ## Try to take hold with limb `i`, aiming at an ideal tip in world space.
 ## Returns true when this call produced a grip. Respects the per-limb attempt cooldown.
 func try_grip(i: int, ideal: Vector2) -> bool:
     if gripping[i] == 1 or _cooldown[i] > 0.0:
         return false
-    _cooldown[i] = ATTEMPT_INTERVAL
+    _cooldown[i] = 0.0 if _landing > 0.0 else ATTEMPT_INTERVAL
     if world == null or world.space_state == null:
         return false
 
@@ -95,7 +113,9 @@ func try_grip(i: int, ideal: Vector2) -> bool:
         return false                     # the locomotor is asking for more than this limb has
 
     var base: Vector2 = to_ideal / ideal_len
-    var spread: float = deg_to_rad(SAMPLE_SPREAD)
+    var landing: bool = _landing > 0.0
+    var samples: int = LANDING_SAMPLES if landing else SAMPLES
+    var spread: float = deg_to_rad(LANDING_SPREAD if landing else SAMPLE_SPREAD)
     var from: Vector2 = anchor + base * MIN_HOLD
     var q: PhysicsRayQueryParameters2D = PhysicsRayQueryParameters2D.create(from, from, world.solid_mask, [])
     q.collide_with_areas = false
@@ -106,8 +126,8 @@ func try_grip(i: int, ideal: Vector2) -> bool:
     var best_normal: Vector2 = Vector2.ZERO
     var best_score: float = INF
 
-    for k in SAMPLES:
-        var t: float = float(k) / float(SAMPLES - 1) * 2.0 - 1.0
+    for k in samples:
+        var t: float = float(k) / float(samples - 1) * 2.0 - 1.0
         var ang: float = spread * t
         var dir: Vector2 = base.rotated(ang)
         q.to = anchor + dir * reach
@@ -218,9 +238,13 @@ func release(i: int) -> void:
     _cooldown[i] = ATTEMPT_INTERVAL      # do not re-grab the same surface on the same tick
 
 
-func release_all() -> void:
+## Let go of everything and keep every limb from re-gripping for `cooldown` seconds.
+## Used on a climb -> fly launch so the wings do not immediately catch the wall again.
+func release_all(cooldown: float = ATTEMPT_INTERVAL) -> void:
     for i in rig.limbs.size():
-        release(i)
+        if gripping[i] == 1:
+            release(i)
+        _cooldown[i] = maxf(_cooldown[i], cooldown)
 
 
 func _latch(i: int, p: Vector2, normal: Vector2) -> void:

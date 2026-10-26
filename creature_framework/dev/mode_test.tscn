@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cfmodetest01"]
+
+[ext_resource type="Script" path="res://creature_framework/dev/mode_test.gd" id="1_modetest"]
+
+[node name="ModeTest" type="Node2D"]
+script = ExtResource("1_modetest")

@@ -21,13 +21,29 @@ func _init() -> void:
 
 func enter() -> void:
     # Spawn / mode-entry: start at hover effort instead of a gravity gulp.
-    if c != null:
-        c.thrust = c.tune(&"fly_hover_thrust", 0.85)
+    if c == null:
+        return
+    c.thrust = c.tune(&"fly_hover_thrust", 0.85)
+    if c.body == null or c.limbs == null:
+        return                                  # first enter(): limbs are created after loco
+    if c.limbs.grip_count() <= 0:
+        return
+    # Climb -> fly launch: leave along the wall normal we were holding, then lock the limbs
+    # out of grip attempts for a moment so the wings do not catch the same face again.
+    var n: Vector2 = c.limbs.grip_normal_avg()
+    if n.length_squared() < 0.0001:
+        n = Vector2.UP
+    var dt: float = 1.0 / 60.0
+    var impulse: float = c.tune(&"fly_launch_impulse", 120.0)
+    for i in c.body.pos.size():
+        c.body.add_impulse(i, n * impulse, dt)
+    c.limbs.release_all(c.tune(&"fly_launch_grip_lock", 0.3))
+    c.thrust = 1.0                              # catch the fall while the wings come up
 
 
 func score(_intent: Intent) -> float:
-    # Flight is always possible. ClimbLocomotor will score higher when a grip surface is adjacent
-    # and the goal is climb-reachable (see README task T6).
+    # Flight is always possible. ClimbLocomotor scores higher (1.8-2.0) when a surface is
+    # adjacent and the goal is climb-reachable, and lower (0.25) when the goal leaves the wall.
     return 1.0
 
 

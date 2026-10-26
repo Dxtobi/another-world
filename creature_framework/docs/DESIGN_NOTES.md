@@ -136,6 +136,8 @@ Holding:
 - Release when `anchor.distance_to(grip_pos) > reach`, or by an explicit `release()`. That distance is the only
   automatic release; T5's gait rule releases the limb furthest behind the travel direction before it gets there.
 - Attempts are throttled to one per limb every 0.06 s (staggered), so four limbs do not fan rays on the same tick.
+  The **landing window** (T6) is the exception: for 0.4 s every free limb tries every tick with 16 rays over ±34°,
+  so a moving flyer catches a face on the transition.
 - T4 was cosmetic: `Creature` pins `limb_tip` to the grip. T5 turns the grips into a body constraint by pulling
   toward `grip_centroid()` along `grip_normal_avg()` (section 4); the tip pin remains for the visual limb.
 
@@ -163,8 +165,9 @@ Per tick, before `body.step`:
 4. **Free limbs.** Each free limb reaches to `project(anchor, wall) + tangent * min(reach * 0.75, 52) + n * 5`, then
    `LimbSystem`'s normal ray fan grips the face. The 5 px offset keeps the ray's start clear of the surface.
 
-`ClimbLocomotor.score()` returns 1 only while at least one grip is held; it is deliberately **not** in
-`VultureRig` yet. T6 adds the adjacency/landing score that hands a flyer over to it.
+`ClimbLocomotor.score()` returned 1 only while at least one grip was held in T5. T6 extends the score (section 5)
+so a flyer lands when the goal sits on a reachable surface; `VultureRig` now lists `FlyLocomotor` then
+`ClimbLocomotor`.
 
 Tuning order: `climb_hang_k` (too high = rigid, too low = balloon), `climb_free_sag` / `climb_hold_offset`,
 `climb_gait_behind`, then `climb_accel` / `climb_max_speed`.
@@ -178,14 +181,46 @@ sway is **3.32 px**, with **0** body points inside terrain. The no-grip case (op
 Demo (`dev/climb_demo.tscn`, MCP-verified at 640x360): the goal slides between y 180 and 380. The vulture climbs
 to ~204, descends to ~379, the HUD shows 4/4 grips (3 during a gait release), and the game log has no errors.
 
-## 5. Mode switching and transitions (T6)
+## 5. Mode switching and transitions (implemented in LocoManager + locomotor scores)
 
-- `score()` per locomotor; `LocoManager` already adds stickiness + lock_time (hysteresis) and crossfades weights.
-- Climb -> fly when no valid grip candidates for ~10 frames or goal unreachable by climbing.
-- Fly -> climb when a cling surface is adjacent AND the goal is reachable on the surface grid.
-- Launch (on entering fly): push away from the wall, `body.add_impulse(i, normal * 120, dt)`, set `thrust = 1`, release all grips.
-- Landing (on entering climb): bleed speed (`prev[i] = prev[i].lerp(pos[i], 0.6)`), 0.4 s window with 16 grip samples.
-- Verlet keeps velocity in `pos - prev`, so do not touch `prev` otherwise; switches stay continuous.
+The locomotion manager already adds stickiness and a switch lock, so the mode scores only have to answer
+"which mode is better right now". Transitions are then a blend, not a snap.
+
+```
+climb held + goal climbable     2.00
+climb held + goal left surface  0.25      # fly's 1.0 wins on the next decision
+climb landed + goal climbable   1.80      # face adjacent + surface route to goal
+fly                             1.00      # always possible
+stickiness                      0.25      # score bonus for the current mode
+lock                            0.50 s    # no switch sooner than this
+crossfade                       0.35 s
+```
+
+- **What "goal climbable" means:** the goal is within `climb_goal_radius` (52 px) of terrain, **and** the
+  surface grid has a path from the body to that goal. The result is cached for 12 physics frames and invalidated
+  early when the goal moves more than 24 px; A* must not run every tick.
+- **Probe the head first.** Flight steers by the head, so when a flyer hovers at a wall goal its head is on the
+  face while its centre is a body-length back. Scoring therefore calls `surface_near(head)` and only falls back
+  to the centre. Probing the centre alone left the flyer hovering at the goal without ever landing.
+- **Landing (on entering climb):** if no grip is held and speed is above 60 px/s, bleed to 40 % of it with
+  `prev[i] = prev[i].lerp(pos[i], 0.6)`. Open a 0.4 s landing window in `LimbSystem`: every free limb attempts on
+  every tick with 16 rays over ±34°. The bleed itself is what keeps the body from spearing into the face at
+  flight speed.
+- **Launch (on entering fly):** read the average held-grip normal, add `120 px/s` to every point along it,
+  release every grip with a 0.3 s re-grip lockout, and set `thrust = 1` so the wings catch the fall. The lockout
+  matters: without it the wings immediately catch the face they just left.
+- Verlet keeps velocity in `pos - prev`, so `prev` is only touched for the landing bleed; every other switch is
+  continuous by construction.
+- **Hysteresis in practice:** the mode harness asserts the exact switch count (1 / 1 / 0 / 1) rather than merely
+  "ends in the right mode", so a one-frame flicker fails. The 0.5 s lock is what makes that stable.
+- **Clearance is per body.** The mode harness bakes with `path_clearance = 58` because the vulture spine is 80 px;
+  the default 34 px is a point-sized assumption and let the body wedge on tall corners. One shared bake per level
+  (T11) needs the largest creature's clearance, or per-creature grids.
+
+Acceptance (`dev/mode_test.tscn`): climb-only goal -> exactly 1 switch, reach in **4.08 s** in climb, closest
+**29.4 px**, 4 grips; move the goal into open air -> exactly 1 switch, reach in **9.38 s** in fly, launch
+`vx -96.8`, 0 grips; flight-only goal -> **0** switches, reach in **8.00 s**; ambiguous goal -> climb, exactly
+**1** switch, reach in **3.35 s**, 4 grips. **0** body points inside terrain in every phase.
 
 ## 6. Making 2D feel 3D (T7, T8)
 
@@ -238,3 +273,12 @@ No art until T7, so the vector debug view carries the read. Formulas worth keepi
   `release_furthest_behind()` because the climb body constraint needs to read all grips through one API instead of
   reaching into the arrays from the locomotor. `grip_normal()` was renamed `grip_normal_avg()` to stop colliding
   with the `grip_normal` member array; the array itself is unchanged. No behaviour changed for `FlyLocomotor`.
+- **T6 (surface reachability in `core/world_query.gd`):** added `surface_reachable(a, b, max_snap_cells)` and
+  `nearest_surface_cell()`. Mode scoring needs to know whether the surface grid connects two points; doing it in
+  the locomotor would duplicate grid internals, and both methods are useful to any future climber. With no grid the
+  query returns true (the caller has already checked both points touch a surface), preserving dev-scene behaviour.
+- **T6 (landing window + launch lockout in `core/limb_system.gd`):** added `begin_landing()`, `end_landing()` and
+  an optional cooldown to `release_all(cooldown)`. The landing window changes the ray fan/attempt cadence, which is
+  grip-search policy and belongs with the grip code, not in a locomotor. `release_all` previously had no way to
+  prevent immediate re-gripping, so the launch could not leave the wall. Existing callers are unaffected by the
+  default cooldown.

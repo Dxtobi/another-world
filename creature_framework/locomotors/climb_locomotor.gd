@@ -11,19 +11,65 @@ extends Locomotor
 ## Weight illusion from grip count: fewer grips means more gravity, more damping and less
 ## climb authority. With zero grips nothing pulls the body and it sags and slows.
 ##
-## This mode is not selected automatically yet. T6 adds the landing window and the score that
-## hands a flyer over to it; in T5 the dev harness gives a creature this locomotor directly.
+## T6 selects this mode automatically: a held grip scores high, and a nearby surface whose
+## grid path reaches a goal that also touches terrain scores high enough to land. A goal in
+## open air scores low, so a climber lets go and flies to it.
+##
+## Entering the mode bleeds some speed and opens a short landing window with more grip rays;
+## leaving it is handled by FlyLocomotor.enter(), which reads the last wall normal, pushes
+## off and releases every grip.
+
+const SCORE_HELD := 2.0          # already holding: stay unless the goal leaves the surface
+const SCORE_HELD_EXIT := 0.25    # goal no longer climbable: fly wins on the next decision
+const SCORE_LAND := 1.8          # surface adjacent + goal climb-reachable: beat fly's 1.0
+const SCORE_CHECK_FRAMES := 12   # re-check grid reachability ~5x/s, not every tick
+
+var _goal_cache: Vector2 = Vector2.INF
+var _goal_cache_ok: bool = false
+var _goal_cache_frame: int = 0
+var _probe_cache: WorldQuery.SurfaceHit = null
+var _probe_cache_frame: int = -1
+
 
 func _init() -> void:
     id = &"climb"
 
 
-## T5: holding a surface is the hard requirement. T6 will also score a surface that is only
-## adjacent, so a flyer can land and switch.
-func score(_intent: Intent) -> float:
+func score(intent: Intent) -> float:
     if c == null or c.limbs == null:
         return 0.0
-    return 1.0 if c.limbs.grip_count() > 0 else 0.0
+    if c.limbs.grip_count() > 0:
+        return SCORE_HELD if _goal_climbable(intent) else SCORE_HELD_EXIT
+    if not _goal_climbable(intent):
+        return 0.0
+    var hit: WorldQuery.SurfaceHit = _local_surface()
+    if hit == null:
+        return 0.0
+    return SCORE_LAND if hit.distance <= c.tune(&"climb_land_radius", 46.0) else 0.0
+
+
+func enter() -> void:
+    _goal_cache = Vector2.INF
+    _goal_cache_ok = false
+    _goal_cache_frame = 0
+    _probe_cache = null
+    _probe_cache_frame = -1
+    # LimbSystem is created after LocoManager, so the very first enter() has no limbs yet.
+    if c == null or c.body == null or c.limbs == null:
+        return
+    var dt: float = 1.0 / 60.0
+    var v: Vector2 = c.body.velocity(c.rig.center_point, dt)
+    if c.limbs.grip_count() == 0 and v.length() > c.tune(&"climb_land_bleed_min", 60.0):
+        # Keep `keep` of the velocity: the landing must not throw the body into the wall.
+        var keep: float = c.tune(&"climb_land_bleed_keep", 0.4)
+        for i in c.body.pos.size():
+            c.body.prev[i] = c.body.prev[i].lerp(c.body.pos[i], 1.0 - keep)
+    c.limbs.begin_landing(c.tune(&"climb_land_window", 0.4))
+
+
+func exit() -> void:
+    if c != null and c.limbs != null:
+        c.limbs.end_landing()
 
 
 func emit(dt: float, intent: Intent, out: MoveOutput) -> void:
@@ -37,7 +83,7 @@ func emit(dt: float, intent: Intent, out: MoveOutput) -> void:
     var n: Vector2 = limbs.grip_normal_avg()
     var hit: WorldQuery.SurfaceHit = null
     if n.length_squared() < 0.0001:
-        hit = _probe()
+        hit = _local_surface()
         if hit != null:
             n = hit.normal
 
@@ -123,8 +169,44 @@ func _tangent_toward(intent: Intent, centre: Vector2, n: Vector2) -> Vector2:
     return t.normalized() if t.length_squared() > 0.0001 else Vector2.ZERO
 
 
+## Find the face to land on. Probe the HEAD first: flight steers by the head, so a flyer
+## hovering at a wall goal has its head on the face and its centre a body-length back.
+## Falling back to the centre keeps backing/climbing cases working.
 func _probe() -> WorldQuery.SurfaceHit:
     if c == null or c.world == null:
         return null
     var radius: float = c.tune(&"climb_wall_probe", 70.0)
+    var hit: WorldQuery.SurfaceHit = c.world.surface_near(c.body.pos[c.rig.front_point], radius)
+    if hit != null:
+        return hit
     return c.world.surface_near(c.body.pos[c.rig.center_point], radius)
+
+
+## The surface probe is needed by score() and emit() in the same tick; cast its rays once.
+func _local_surface() -> WorldQuery.SurfaceHit:
+    var frame: int = Engine.get_physics_frames()
+    if frame == _probe_cache_frame:
+        return _probe_cache
+    _probe_cache_frame = frame
+    _probe_cache = _probe()
+    return _probe_cache
+
+
+## Is the brain's goal a place a climber can actually get to? Both the goal and the body
+## must touch terrain, and (when a grid exists) the surface grid must connect them. Cached
+## for a few frames and invalidated when the goal moves, because A* must not run per tick.
+func _goal_climbable(intent: Intent) -> bool:
+    if c == null or c.world == null or not intent.has_goal:
+        return false
+    var frame: int = Engine.get_physics_frames()
+    var moved: bool = _goal_cache == Vector2.INF \
+        or _goal_cache.distance_to(intent.goal) > c.tune(&"climb_goal_tolerance", 24.0)
+    if not moved and frame < _goal_cache_frame:
+        return _goal_cache_ok
+    _goal_cache = intent.goal
+    _goal_cache_frame = frame + SCORE_CHECK_FRAMES
+    var goal_hit: WorldQuery.SurfaceHit = c.world.surface_near(
+        intent.goal, c.tune(&"climb_goal_radius", 52.0))
+    _goal_cache_ok = goal_hit != null and c.world.surface_reachable(
+        c.body.pos[c.rig.center_point], intent.goal, 3)
+    return _goal_cache_ok

@@ -26,6 +26,7 @@ static func build() -> CreatureRig:
     rig.limbs.append(_limb(&"leg_near", &"leg", 2, Vector2(1.0, 8.0), 55.0, 1))
 
     rig.locomotors.append(FlyLocomotor)
+    rig.locomotors.append(ClimbLocomotor)
     return rig
 
 

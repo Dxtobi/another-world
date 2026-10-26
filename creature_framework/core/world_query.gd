@@ -119,6 +119,45 @@ func is_solid_adjacent(p: Vector2, radius: float = 10.0) -> bool:
     return surface_near(p, radius) != null
 
 
+## True when `a` and `b` are connected across the baked **surface** grid (the same grid a
+## climber would walk). Each point is snapped to the nearest surface cell within
+## `max_snap_cells`, so a flyer a body-width off a face still counts as touching it.
+##
+## With no grid (dev scene) this returns true: the caller has already checked that both
+## points touch a surface. That keeps mode scoring usable before T11 bakes a shared grid.
+func surface_reachable(a: Vector2, b: Vector2, max_snap_cells: int = 3) -> bool:
+    if not has_grids():
+        return true
+    var ca: Vector2i = nearest_surface_cell(a, max_snap_cells)
+    var cb: Vector2i = nearest_surface_cell(b, max_snap_cells)
+    if ca.x < 0 or cb.x < 0:
+        return false
+    return not _surface.get_id_path(ca, cb).is_empty()
+
+
+## Nearest walkable surface-grid cell to `p`, searching outward in square rings up to
+## `max_ring`, or (-1, -1) when none is found.
+func nearest_surface_cell(p: Vector2, max_ring: int = 3) -> Vector2i:
+    if _surface == null:
+        return Vector2i(-1, -1)
+    var id: Vector2i = to_cell(p)
+    if _is_surface_cell(id):
+        return id
+    for ring in range(1, max_ring + 1):
+        for dy in range(-ring, ring + 1):
+            for dx in range(-ring, ring + 1):
+                if maxi(absi(dx), absi(dy)) != ring:
+                    continue
+                var q: Vector2i = id + Vector2i(dx, dy)
+                if _is_surface_cell(q):
+                    return q
+    return Vector2i(-1, -1)
+
+
+func _is_surface_cell(id: Vector2i) -> bool:
+    return _surface != null and _surface.is_in_boundsv(id) and not _surface.is_point_solid(id)
+
+
 # ---------------------------------------------------------------- resolve
 
 ## Keep every body point out of the level and slide it along whatever it hit.
