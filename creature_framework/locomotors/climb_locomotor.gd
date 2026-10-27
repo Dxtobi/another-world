@@ -5,8 +5,9 @@ extends Locomotor
 ## There is no grip physics. Each point is pulled toward a line on the wall built from the
 ## held-grip centroid, a stiff spring holds the belly off the wall, and a climb force pushes
 ## along the surface. The gait lets go of the limb furthest behind the body (never with fewer
-## than `climb_min_other` others holding) so it can reach ahead on the next tick; that cycle is
-## what moves the grip centroid and therefore the body.
+## than `climb_min_other` others holding, capped at one fewer than the rig's limb count) so it
+## can reach ahead on the next tick; that cycle is what moves the grip centroid and therefore
+## the body.
 ##
 ## Weight illusion from grip count: fewer grips means more gravity, more damping and less
 ## climb authority. With zero grips nothing pulls the body and it sags and slows.
@@ -29,6 +30,13 @@ var _goal_cache_ok: bool = false
 var _goal_cache_frame: int = 0
 var _probe_cache: WorldQuery.SurfaceHit = null
 var _probe_cache_frame: int = -1
+var _stuck_cd: float = 0.0
+## Damped body heading along the surface. The raw travel tangent can reverse 180 degrees in
+## one tick when the goal moves to the other side of the body; the desired pose would then be
+## collinear with the current one and the springs would pull head and tail straight through
+## each other (a symmetric deadlock). Turning the desired line at a finite rate through the
+## open side of the wall gives the body a real arc to follow.
+var _heading: Vector2 = Vector2.ZERO
 
 
 func _init() -> void:
@@ -54,6 +62,8 @@ func enter() -> void:
     _goal_cache_frame = 0
     _probe_cache = null
     _probe_cache_frame = -1
+    _stuck_cd = 0.0
+    _heading = Vector2.ZERO
     # LimbSystem is created after LocoManager, so the very first enter() has no limbs yet.
     if c == null or c.body == null or c.limbs == null:
         return
@@ -79,28 +89,17 @@ func emit(dt: float, intent: Intent, out: MoveOutput) -> void:
     var mid: int = rig.center_point
     var centre: Vector2 = b.pos[mid]
 
-    # Wall frame. Held grips give the most stable normal; probe only before the first grip.
+    # Wall frame. Held grips give the most stable normal; before the first grip, probe.
+    var probe: WorldQuery.SurfaceHit = _local_surface()
     var n: Vector2 = limbs.grip_normal_avg()
-    var hit: WorldQuery.SurfaceHit = null
-    if n.length_squared() < 0.0001:
-        hit = _local_surface()
-        if hit != null:
-            n = hit.normal
+    if n.length_squared() < 0.0001 and probe != null:
+        n = probe.normal
 
     var tangent: Vector2 = _tangent_toward(intent, centre, n)
     var arrived: bool = intent.has_goal \
         and centre.distance_to(intent.goal) <= c.tune(&"climb_arrive", 26.0)
 
-    # Gait: the limb furthest behind gets to re-reach, as long as enough others still hold.
-    if tangent != Vector2.ZERO and not arrived:
-        limbs.release_furthest_behind(
-            tangent,
-            int(c.tune(&"climb_min_other", 2.0)),
-            c.tune(&"climb_gait_behind", 20.0))
-
-    var grip_count: int = limbs.grip_count()
     var limb_count: int = maxi(rig.limbs.size(), 1)
-    var grip_factor: float = float(grip_count) / float(limb_count)
     var gravity: float = c.tune(&"gravity", 900.0)
     var hang_k: float = c.tune(&"climb_hang_k", 14.0)
     var hang_damp: float = c.tune(&"climb_hang_damp", 6.0)
@@ -112,17 +111,79 @@ func emit(dt: float, intent: Intent, out: MoveOutput) -> void:
     var max_speed: float = c.tune(&"climb_max_speed", 130.0)
     var no_grip_damp: float = c.tune(&"climb_no_grip_damp", 1.2)
 
+    # Gait: the limb furthest behind gets to re-reach, as long as enough others still hold.
+    # A two-limb crawler can only ever let go with one hand left, so the floor is capped at
+    # `limb_count - 1`; the old fixed 2 deadlocked every two-legged rig with both feet down.
+    # The "behind" threshold follows the same spring that decides how far the body leads the
+    # grip centroid (climb_accel / hang_k) instead of a fixed 20 px, which sat just above
+    # that lead and made a short-bodied climber's grips never count as behind.
+    var min_other: int = mini(int(c.tune(&"climb_min_other", 2.0)), limb_count - 1)
+    var gait_behind: float = c.tune(&"climb_gait_behind", -1.0)
+    if gait_behind < 0.0:
+        gait_behind = clampf(climb_accel / maxf(hang_k, 0.001) * 0.5, 3.0, 20.0)
+    var released: int = -1
+    if tangent != Vector2.ZERO and not arrived:
+        released = limbs.release_furthest_behind(tangent, maxi(min_other, 0), gait_behind)
+
+    # Corner hand-off. At a wall base both feet can end up *ahead* of the body (it is wedged
+    # into the corner), so the "furthest behind" rule has nothing to release and the rig
+    # stalls forever. When the head probes a different face than the feet hold and the body is
+    # not moving along the current tangent, let the rearmost foot go: it reaches onto the new
+    # face, and the next grip turns the body onto it.
+    _stuck_cd = maxf(_stuck_cd - dt, 0.0)
+    var corner: bool = probe != null and n.length_squared() > 0.0001 \
+        and probe.normal.dot(n) < c.tune(&"climb_corner_dot", 0.7)
+    if released < 0 and corner and _stuck_cd <= 0.0 and limbs.grip_count() > 1:
+        var tangent_speed: float = b.velocity(mid, dt).dot(tangent)
+        if absf(tangent_speed) < c.tune(&"climb_stuck_speed", 18.0):
+            released = limbs.release_furthest_behind(tangent, maxi(min_other, 0), -INF)
+            if released >= 0:
+                _stuck_cd = c.tune(&"climb_stuck_retry", 0.5)
+
+    var grip_count: int = limbs.grip_count()
+    var grip_factor: float = float(grip_count) / float(limb_count)
+
     var hold: Vector2 = limbs.grip_centroid() + n * (hold_offset + free_sag * float(limb_count - grip_count))
-    var wall_ref: Vector2 = limbs.grip_centroid() if grip_count > 0 else (hit.pos if hit != null else centre)
+    var wall_ref: Vector2 = limbs.grip_centroid() if grip_count > 0 else (probe.pos if probe != null else centre)
+
+    var reach_n: Vector2 = n
+    var reach_ref: Vector2 = wall_ref
+    var reach_tangent: Vector2 = tangent
+    if corner:
+        # A free limb reaches for the face the head can see, not the one the feet stand on.
+        reach_n = probe.normal
+        reach_ref = probe.pos
+        reach_tangent = _tangent_toward(intent, centre, reach_n)
+
+    # Turn the desired body line toward the travel direction at a finite rate. A 180 degree
+    # reversal swings through the open side of the surface (the outward normal), not through
+    # the wall; see `_heading`.
+    if tangent != Vector2.ZERO:
+        if _heading.length_squared() < 0.0001:
+            var spine: Vector2 = c.spine_dir()
+            _heading = spine.normalized() if spine.length_squared() > 1.0 else tangent
+        var diff: float = _heading.angle_to(tangent)
+        if absf(diff) > PI - 0.1:
+            diff = PI * signf(_heading.rotated(PI * 0.5).dot(n))
+        var max_turn: float = c.tune(&"climb_turn_rate", 5.0) * dt
+        _heading = _heading.rotated(clampf(diff, -max_turn, max_turn)).normalized()
 
     for i in b.pos.size():
         var p: PointDef = rig.points[i]
         var v: Vector2 = b.velocity(i, dt)
         var acc: Vector2 = Vector2.ZERO
+        if not p.driven:
+            # Trailing chain (tail/tentacle): nothing steers it. Gravity makes it hang,
+            # damping kills the solver's whip, and its links drag it after the body. Pinning
+            # it to the wall line like a spine point would lever the body off the surface.
+            acc -= v * c.tune(&"climb_trail_damp", 2.5)
+            acc.y += gravity * c.tune(&"climb_trail_gravity", 0.2)
+            out.add_accel(i, acc)
+            continue
         if grip_count > 0 and tangent != Vector2.ZERO:
             # Desired point on the wall-parallel body line: gripped centroid, spine offsets
-            # along the travel tangent, belly toward the wall.
-            var desired: Vector2 = hold + tangent * p.offset.x - n * p.offset.y
+            # along the (damped) heading, belly toward the wall.
+            var desired: Vector2 = hold + _heading * p.offset.x - n * p.offset.y
             acc += (desired - b.pos[i]) * hang_k
             acc -= v * hang_damp
             acc += tangent * climb_accel * grip_factor
@@ -134,7 +195,7 @@ func emit(dt: float, intent: Intent, out: MoveOutput) -> void:
         acc.y += gravity * (1.0 - grip_factor)
         out.add_accel(i, acc)
 
-    _emit_limbs(out, tangent, n, limbs, wall_ref)
+    _emit_limbs(out, reach_tangent, reach_n, limbs, reach_ref)
 
 
 ## Free limbs reach ahead along the wall from their own anchor. The target sits 5 px off the

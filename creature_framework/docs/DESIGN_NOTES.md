@@ -150,33 +150,72 @@ means "hold still" rather than "push inward".
 
 Per tick, before `body.step`:
 
-1. **Gait.** If not arrived, `limbs.release_furthest_behind(tangent, min_other = 2, min_behind = 20)`: at most one
-   held limb is let go per tick, and only the one furthest *behind* the body along the travel tangent, and only
-   while two others still hold. `LimbSystem.update` has already dropped any grip past `max_reach` (the hard
-   constraint), so the gait release is what starts the next reach before the body pulls that limb off.
+1. **Gait.** If not arrived, `limbs.release_furthest_behind(tangent, min_other, min_behind)`: at most one held limb
+   is let go per tick, and only the one furthest *behind* the body along the travel tangent, and only while enough
+   others still hold. `LimbSystem.update` has already dropped any grip past `max_reach` (the hard constraint), so
+   the gait release is what starts the next reach before the body pulls that limb off.
+   - **`min_other = min(climb_min_other, limb_count - 1)`.** The default `climb_min_other` is 2, which is right for
+     the four-limb vulture but impossible for a two-limb crawler: with both feet down it can never let go, so it
+     deadlocks. Capping at one fewer than the rig's limb count lets a biped hand over hand and leaves a quadruped
+     unchanged.
+   - **`min_behind = climb_gait_behind`, or derived when negative (default).** The body leads the grip centroid by
+     roughly `climb_accel / climb_hang_k` (240 / 14 ≈ 17 px) in equilibrium; a fixed 20 px threshold sits just above
+     that lead, so on a short body no grip ever counts as behind and the gait never fires. The derived value is
+     `0.5 * climb_accel / climb_hang_k`, clamped to 3..20 px, so it tracks the spring instead of assuming a body
+     length.
 2. **Weight illusion.** `grip_factor = grips / limbs.size()`. Gravity is `900 * (1 - grip_factor)`, so fewer grips
    means more hang. With zero grips the body also gets `-vel * 1.2`: it coasts to a stop instead of chasing the
    goal with no purchase.
 3. **Body line.** `hold = grip_centroid + n * (30 + 8 * free_limbs)` — each free limb lets the belly hang a little
    further out, so the hand-over-hand cycle rocks the body in and out instead of sliding up a rail. Each point's
-   desired position is `hold + tangent * point.offset.x - n * point.offset.y`, i.e. the spine is laid **along** the
-   travel direction with the belly toward the wall. A spring (`k = 14`) plus damping (`6`) pulls every point there.
-   `tangent * 240 * grip_factor` is the climb push, capped at `130 px/s` along the tangent.
+   desired position is `hold + _heading * point.offset.x - n * point.offset.y`, i.e. the spine is laid **along** the
+   travel direction (through the damped heading, item 6) with the belly toward the wall. A spring (`k = 14`) plus
+   damping (`6`) pulls every point there. `tangent * 240 * grip_factor` is the climb push, capped at `130 px/s`
+   along the tangent.
 4. **Free limbs.** Each free limb reaches to `project(anchor, wall) + tangent * min(reach * 0.75, 52) + n * 5`, then
    `LimbSystem`'s normal ray fan grips the face. The 5 px offset keeps the ray's start clear of the surface.
+5. **Corner hand-off.** A wall base is not a flat wall. The crawler wedges into the corner with both feet *ahead*
+   of the body, so "release the furthest behind" has nothing to release and the rig stalls forever. When the head
+   probe sees a face the held grips do not (`probe.normal.dot(n) < climb_corner_dot`) and the body is not moving
+   along its travel tangent (`|velocity·tangent| < climb_stuck_speed`), the rearmost grip is released
+   (`min_behind = -INF`) so that limb can reach onto the new face; the release is rate-limited by
+   `climb_stuck_retry`. Free limbs then aim at the probed face (`reach_n = probe.normal`, `reach_ref = probe.pos`)
+   with a tangent re-projected onto it, so the grip that lands turns the body onto the new surface.
+6. **Damped heading.** Travel is still the raw projected goal direction, but the body line follows `_heading`, which
+   turns toward it at `climb_turn_rate` (5 rad/s). A goal that flips to the other side of the body would otherwise
+   request a 180° reversal of a collinear pose: the springs pull head and tail through each other and the body
+   sits in a symmetric deadlock. When `|angle| > PI - 0.1` the turn direction is chosen through the open side of the
+   wall (`sign(_heading.rotated(PI/2)·n)`), so the reversal arcs out and back rather than through the surface.
+7. **Surface-owned belly.** While at least one grip is held, a vertical spine cannot say which side is the belly;
+   deriving it from mirrored `facing` put the legs on the far side of a descending climber — the "upside down"
+   read. `Creature.body_frame()` now takes the belly from the held surface normal (`-grip_normal_avg()`, flattened
+   onto the surface so the frame stays orthonormal) whenever a grip exists, and falls back to `facing` in the air.
+8. **Trailing chains.** Points generated by a tail/tentacle bake carry `PointDef.driven = false`. Driven points are
+   positioned by this loop; a trailing chain is not. It gets `-velocity * climb_trail_damp` and
+   `gravity * climb_trail_gravity` (0.2) instead, so it hangs from its links and follows the body. Pinning a tail to
+   the wall-parallel body line would give it the same spring authority as the spine and lever the body off the
+   surface.
 
 `ClimbLocomotor.score()` returned 1 only while at least one grip was held in T5. T6 extends the score (section 5)
 so a flyer lands when the goal sits on a reachable surface; `VultureRig` now lists `FlyLocomotor` then
 `ClimbLocomotor`.
 
 Tuning order: `climb_hang_k` (too high = rigid, too low = balloon), `climb_free_sag` / `climb_hold_offset`,
-`climb_gait_behind`, then `climb_accel` / `climb_max_speed`.
+`climb_gait_behind`, then `climb_accel` / `climb_max_speed`. The post-T8 fixes add `climb_min_other` (capped by
+limb count), `climb_corner_dot` / `climb_stuck_speed` / `climb_stuck_retry`, `climb_turn_rate`, and
+`climb_trail_gravity` / `climb_trail_damp` for authored trailing chains.
 
 Acceptance (`dev/climb_test.tscn`): a vulture with only `ClimbLocomotor` starts spine-vertical on a wall at x 340.
 All four limbs hold at **0.05 s**; it climbs **238.1 px** (min y 191.9), comes within **15.5 px** of the goal and
 reaches it in **6.33 s**. The gait makes **37** grip changes; every limb releases and re-grips (`1111`). In/out
 sway is **3.32 px**, with **0** body points inside terrain. The no-grip case (open air, shoved to 180 px/s) sags
 **254.9 px** in 1 s, decays `vx 180 -> 21.2`, and never finds a grip.
+
+Two-limb regression (`mode_test`): the copied-vulture rig (Climb only, two legs) climbs **164 px** and descends
+**85 px** across the wall base, with the belly on the surface (`belly·-n` min **1.00**) and lift/gravity applied per
+body point. A live playground run crawls ~750 px, climbs to `(609,300)`, turns, and descends to `(609,470)` without
+the belly flipping. The same rig with an authored 5-point tail (10 body points, 10 links) reaches `(610,300)` and
+back to `(608,471)` with links holding to **8-10 %** of rest length.
 
 Demo (`dev/climb_demo.tscn`, MCP-verified at 640x360): the goal slides between y 180 and 380. The vulture climbs
 to ~204, descends to ~379, the HUD shows 4/4 grips (3 during a gait release), and the game log has no errors.
@@ -390,6 +429,11 @@ creature is therefore: duplicate a rig scene, shape it in the inspector, point t
 | `RigLimb` parent | `LimbDef.anchor_point` = the parent point's baked index |
 | `RigLimb.position` | `LimbDef.local_offset` (spine frame: +x forward, +y belly) |
 | `RigLimb.kind/style/lane/reach` | `LimbDef.kind/style/lane/reach` |
+| `RigBodyPart` parent | `BodyPartDef.points[0]` = the parent point's baked index |
+| `RigBodyPart.length/spacing` | `length` generated `PointDef`s at `spacing` intervals, plus their links |
+| `RigBodyPart.position` (handle) / `direction` | chain rest direction in the spine frame |
+| `RigBodyPart.base_mass/tip_mass` | generated `PointDef.mass`, interpolated base -> tip |
+| `RigBodyPart.kind` | `BodyPartDef.kind`; `tail` also sets `CreatureRig.authored_tail` |
 | `front_point/center_point/rear_point` | `CreatureRig.front_point/center_point/rear_point` (names -> indices) |
 | `locomotor_flags` | `rig.locomotors` through `LocomotorCatalog`, in fly-then-climb order |
 | `tuning` | deep copy into `rig.tuning` |
@@ -407,13 +451,26 @@ Why the layout is shaped that way:
   discarded. The solver owns the runtime transform; a rest offset is a position, not a pose. (The root's own
   transform is not read at all.)
 - **Limbs bake in point order, then child order**, so `LimbSystem` indices are stable for a given scene.
+- **A tail or tentacle is one node, not a row of points.** `RigBodyPart.length` counts *extra* points after its
+  anchor, so `length = 5` bakes anchor -> `<part>_1 .. <part>_5`. Generated points are appended **after** every
+  authored point, so hand-authored indices never move; they are joined from the anchor with stiffness-1 links,
+  keep the anchor's `base_depth`, and are marked `driven = false` because a trailing chain is not spine (section 4).
+  The node's **position is a direction handle**, not an offset: drag it to aim the chain. `auto_direction` uses the
+  handle, otherwise the numeric `direction` vector (`-x` backwards) is used, so a point exactly on its anchor still
+  has a rest direction. `kind` is `tail` or `tentacle`; both bake the same chain, but only `tail` claims
+  `authored_tail`, which makes `Creature.setup()` skip the cosmetic follower tail. Keep chains light
+  (`base_mass 0.5`, `tip_mass 0.15`): a chain as heavy as the spine drags the gait and stretches its links against
+  the floor.
 
 Validation (all reported by `validate()`, and `build_rig()` returns `null` while anything is wrong): >= 3 points;
 unique non-empty names; `mass > 0`; `base_depth` finite and within -1..+1; finite positions; no rotation/scale;
 the three role names exist and differ;
 limbs are direct children of a `RigPoint` with a known `style`, a `lane` of -1/+1, `reach > 0`; link endpoints
-exist and differ, stiffness 0..1, finite positive rest lengths; at least one locomotor flag and no unknown bits;
-every tuning value finite. The **Validate rig** inspector button prints the same list.
+exist and differ, stiffness 0..1, finite positive rest lengths; body parts are direct children of an authored
+`RigPoint` with a unique non-empty name, a known `kind` (`tail`/`tentacle`), `length >= 1`, finite `spacing > 0`,
+positive masses, a finite position/direction (handle or fallback), no rotation/scale, and generated `<part>_N`
+names that collide with neither an authored point nor another chain; at least one locomotor flag and no unknown
+bits; every tuning value finite. The **Validate rig** inspector button prints the same list.
 `RigPoint.base_depth`'s setter already clamps to -1..+1; `validate()` checks it again so a rig built in code
 (not through the inspector) cannot feed the depth layer a value outside its range.
 
@@ -429,7 +486,10 @@ Two Godot 4.7 details worth remembering:
 The preview is editor-only drawing on the same nodes: `RigPoint` rings with a centred name above (mass/depth only
 when non-default), `RigLimb` a solid stub plus a dashed reach guide with its label beside the tip (far limbs to the
 left, near to the right, keyed by `lane`), `RigBlueprint` spine/brace links, an origin cross and a header centred
-over the rest pose. `RigDraw.text()` adds a dark outline so labels survive any background. None of it is baked.
+over the rest pose (with a body-part count when any exist). `RigBodyPart` draws its whole generated chain as dots
+shrinking toward the tip, starting at a small anchor cross, with `<name> <kind> <n> pts <spacing>` right-aligned
+beside the tip so a backwards tail never overlaps its own points. `RigDraw.text()` adds a dark outline so labels
+survive any background. None of it is baked.
 
 ## 9. Framework changes
 (Record here any time a new creature forced an edit in `core/`, and why.)
@@ -476,3 +536,14 @@ over the rest pose. `RigDraw.text()` adds a dark outline so labels survive any b
   `_start_swing()`, `_secondary_dir()`, `_update_tail()`, `_draw_tail()`, `_draw_axis` and `_logic_dt`.
   `_process()` now advances stretch, eased tips and the tail at render rate; `_draw()` uses the eased tips and the
   stretched view. Logic positions, grips and `limb_tip` are untouched; no locomotor, brain or `Body` code changed.
+- **Two-limb climb fixes (`core/creature.gd`, `core/body.gd`):** `Creature.body_frame()` now takes the belly from
+  the held surface normal while gripping (flattened onto the surface) and falls back to `facing` in the air, so a
+  descending climber is not drawn upside down. No locomotion logic reads it; it is the shared frame for cosmetics
+  and debug drawing. `Body` already applied accelerations per point, so the only change needed for multi-point
+  bodies was in the locomotors.
+- **Authored tails/tentacles (`core/point_def.gd`, `core/creature_rig.gd`, `core/creature.gd`, new
+  `core/body_part_def.gd`):** `PointDef.driven` (default true) lets a locomotor distinguish spine it may position
+  from a trailing chain it may only drag indirectly; `CreatureRig.body_parts`/`authored_tail` record the baked
+  chains so cosmetics and the inspector can describe them without re-walking the scene; `Creature.setup()` skips
+  the cosmetic follower tail when the rig authors one. The alternative — special-casing "points after rear" in the
+  locomotor — would hard-code rig shape into `core/`; `driven` keeps that knowledge in the data.

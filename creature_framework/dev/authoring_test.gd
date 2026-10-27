@@ -35,7 +35,9 @@ func _ready() -> void:
     _check_loader()
     _check_mutation()
     _check_validation()
+    _check_body_parts()
     await _check_runtime()
+    await _check_runtime_tail()
     _report()
 
 
@@ -208,6 +210,157 @@ func _check_validation() -> void:
     bad.free()
 
 
+# ---------------------------------------------------------------- body parts
+
+## One RigBodyPart authors a whole chain: `length` extra points, their links, mass falloff
+## and a baked BodyPartDef. The tail is real logic, and the rig flags that so the creature
+## does not also grow its cosmetic follower tail.
+func _check_body_parts() -> void:
+    var bp: RigBlueprint = _fresh()
+    if bp == null:
+        _expect(false, "fresh scene for body-part tests")
+        return
+
+    var part: RigBodyPart = _add_part(bp, 2, "tail")
+    part.kind = "tail"
+    part.length = 4
+    part.spacing = 10.0
+    part.base_mass = 0.9
+    part.tip_mass = 0.4
+
+    _expect(bp.body_parts().size() == 1, "a BodyPart under a point is collected")
+    _expect(bp.limbs().size() == 4, "a BodyPart is not baked as a limb")
+    var errors: PackedStringArray = bp.validate()
+    _expect(errors.is_empty(), "authored tail validates clean (%s)" % ", ".join(errors))
+
+    # Preview geometry: the node's position is the aim handle, not an offset.
+    _expect(part.rest_dir().is_equal_approx(Vector2.LEFT),
+        "auto direction aims along the node position")
+    _expect(part.point_offset(1).is_equal_approx(Vector2(-10.0, 0.0))
+        and part.point_offset(4).is_equal_approx(Vector2(-40.0, 0.0)),
+        "preview points step one spacing per extra point")
+    _expect(part.point_name(2) == &"tail_2", "generated point names are name_index")
+    _expect(is_equal_approx(part.point_mass(1), 0.9)
+        and is_equal_approx(part.point_mass(4), 0.4),
+        "preview mass falls off base -> tip")
+
+    var rig: CreatureRig = bp.build_rig()
+    _expect(rig != null, "authored tail bakes")
+    if rig == null:
+        bp.free()
+        return
+
+    notes.append("tail points=%d links=%d parts=%d" % [
+        rig.points.size(), rig.links.size(), rig.body_parts.size()])
+    _expect(rig.points.size() == 7, "tail appends 4 extra points after the 3 authored ones")
+    _expect(rig.links.size() == 7, "tail appends 4 links (chain from the rear point)")
+    _expect(rig.limbs.size() == 4, "tail leaves the limb list alone")
+    _expect(rig.authored_tail, "a tail BodyPart marks the rig as tail-authored")
+
+    var tail_names: Array[StringName] = [&"tail_1", &"tail_2", &"tail_3", &"tail_4"]
+    var tail_offsets: Array[float] = [-50.0, -60.0, -70.0, -80.0]
+    for k in 4:
+        var p: PointDef = rig.points[3 + k]
+        _expect(p.name == tail_names[k] and is_equal_approx(p.offset.x, tail_offsets[k])
+            and is_zero_approx(p.offset.y) and is_zero_approx(p.base_depth),
+            "tail point %s is at x %.0f" % [p.name, p.offset.x])
+    _expect(is_equal_approx(rig.points[3].mass, 0.9)
+        and is_equal_approx(rig.points[6].mass, 0.4),
+        "tail masses fall off into the bake (0.90 -> 0.40)")
+
+    var tail_links: Array[Vector2i] = [
+        Vector2i(2, 3), Vector2i(3, 4), Vector2i(4, 5), Vector2i(5, 6)]
+    for k in 4:
+        var link: LinkDef = rig.links[3 + k]
+        _expect(link.a == tail_links[k].x and link.b == tail_links[k].y
+            and is_equal_approx(link.rest_length, 10.0)
+            and is_equal_approx(link.stiffness, 1.0),
+            "tail link %d is %d->%d rest 10" % [k, link.a, link.b])
+
+    _expect(rig.body_parts.size() == 1, "baked one body part")
+    if rig.body_parts.size() == 1:
+        var baked: BodyPartDef = rig.body_parts[0]
+        _expect(baked.name == &"tail" and baked.kind == &"tail",
+            "body part keeps its name and kind")
+        var chain: Array[int] = [2, 3, 4, 5, 6]
+        var chain_ok: bool = baked.points.size() == chain.size()
+        for k in mini(baked.points.size(), chain.size()):
+            chain_ok = chain_ok and baked.points[k] == chain[k]
+        _expect(chain_ok, "body part records anchor -> tip indices %s" % str(chain))
+
+    # A tentacle is the same generated chain, but it is not the creature's tail.
+    part.kind = "tentacle"
+    var tentacle: CreatureRig = bp.build_rig()
+    _expect(tentacle != null and not tentacle.authored_tail
+        and tentacle.body_parts[0].kind == &"tentacle",
+        "a tentacle bakes a chain without becoming the authored tail")
+    bp.free()
+
+    _check_body_part_validation()
+
+
+func _check_body_part_validation() -> void:
+    var bad: RigBlueprint = _fresh()
+    if bad == null:
+        _expect(false, "fresh scene for body-part validation")
+        return
+
+    var part: RigBodyPart = _add_part(bad, 2, "tail")
+    part.length = 0
+    _expect(not bad.validate().is_empty(), "body part length 0 is rejected")
+    bad.free()
+
+    bad = _fresh()
+    part = _add_part(bad, 2, "tail")
+    part.spacing = 0.0
+    _expect(not bad.validate().is_empty(), "body part spacing 0 is rejected")
+    bad.free()
+
+    bad = _fresh()
+    part = RigBodyPart.new()
+    part.name = "orphan"
+    bad.add_child(part)
+    _expect(not bad.validate().is_empty(), "a body part outside a point is rejected")
+    bad.free()
+
+    bad = _fresh()
+    var clash: RigPoint = RigPoint.new()
+    clash.name = "tail_1"
+    clash.position = Vector2(0.0, -30.0)
+    bad.add_child(clash)
+    _add_part(bad, 2, "tail")
+    _expect(not bad.validate().is_empty(), "a generated name that collides with a point is rejected")
+    bad.free()
+
+    bad = _fresh()
+    _add_part(bad, 2, "tail")
+    var second: RigBodyPart = RigBodyPart.new()
+    second.name = "tail"
+    second.position = Vector2(0.0, 1.0)
+    bad.points()[1].add_child(second)
+    _expect(not bad.validate().is_empty(), "two body parts with the same name are rejected")
+    bad.free()
+
+    bad = _fresh()
+    part = _add_part(bad, 2, "tail")
+    part.position = Vector2.ZERO
+    part.direction = Vector2.ZERO
+    _expect(not bad.validate().is_empty(), "a body part with no direction is rejected")
+    bad.free()
+
+    bad = _fresh()
+    part = _add_part(bad, 2, "tail")
+    part.rotation = 0.4
+    _expect(not bad.validate().is_empty(), "body part rotation/scale is rejected")
+    bad.free()
+
+    bad = _fresh()
+    part = _add_part(bad, 2, "tail")
+    part.kind = "fin"
+    _expect(not bad.validate().is_empty(), "an unknown body-part kind is rejected")
+    bad.free()
+
+
 # ---------------------------------------------------------------- runtime
 
 func _check_runtime() -> void:
@@ -241,7 +394,76 @@ func _check_runtime() -> void:
     c.queue_free()
 
 
+## An authored chain is real logic: it follows the body, its links keep their rest length,
+## and the cosmetic follower tail stays off.
+func _check_runtime_tail() -> void:
+    var bp: RigBlueprint = _fresh()
+    if bp == null:
+        _expect(false, "fresh scene for tail runtime")
+        return
+    var part: RigBodyPart = _add_part(bp, 2, "tail")
+    part.length = 5
+    part.spacing = 9.0
+    var rig: CreatureRig = bp.build_rig()
+    bp.free()
+    if rig == null:
+        _expect(false, "tail runtime rig bakes")
+        return
+
+    var c: Creature = Creature.new()
+    add_child(c)
+    var brain: GoalBrain = GoalBrain.new()
+    brain.goal = Vector2(650.0, 300.0)
+    var world: WorldQuery = WorldQuery.new()
+    world.bounds = Rect2(0.0, 0.0, 900.0, 600.0)
+    c.setup(rig, brain, world, Vector2(200.0, 300.0))
+    _expect(c.tail.points.is_empty(), "authored tail suppresses the cosmetic follower chain")
+
+    var chain: PackedInt32Array = rig.body_parts[0].points
+    var rest: PackedFloat32Array = PackedFloat32Array()
+    for k in range(1, chain.size()):
+        rest.append(c.body.pos[chain[k - 1]].distance_to(c.body.pos[chain[k]]))
+    var tip_index: int = chain[chain.size() - 1]
+    var start_tip: Vector2 = c.body.pos[tip_index]
+    var max_stretch: float = 0.0
+    var bad_points: int = 0
+    for _i in 180:
+        await get_tree().physics_frame
+        for p in c.body.pos:
+            if not p.is_finite():
+                bad_points += 1
+        for k in range(1, chain.size()):
+            var d: float = c.body.pos[chain[k - 1]].distance_to(c.body.pos[chain[k]])
+            max_stretch = maxf(max_stretch, absf(d - rest[k - 1]) / maxf(rest[k - 1], 0.001))
+
+    # The chain is articulated, not a rigid rod: push the tip sideways and it bends.
+    var span_before: float = c.body.pos[chain[0]].distance_to(c.body.pos[tip_index])
+    c.body.add_impulse(tip_index, Vector2(0.0, 140.0), 1.0 / 60.0)
+    var span_min: float = span_before
+    for _i in 45:
+        await get_tree().physics_frame
+        span_min = minf(span_min, c.body.pos[chain[0]].distance_to(c.body.pos[tip_index]))
+    var bent: float = span_before - span_min
+
+    var tip_moved: float = start_tip.distance_to(c.body.pos[tip_index])
+    notes.append("tail runtime moved=%.1f px stretch=%.3f bent=%.1f bad=%d" % [
+        tip_moved, max_stretch, bent, bad_points])
+    _expect(bad_points == 0, "authored tail stays finite")
+    _expect(tip_moved > 20.0, "authored tail follows the body (%.1f px)" % tip_moved)
+    _expect(bent > 1.0, "authored tail articulates instead of staying a rigid rod (%.1f px)" % bent)
+    _expect(max_stretch < 0.30, "authored tail links hold their rest length (%.3f max)" % max_stretch)
+    c.queue_free()
+
+
 # ---------------------------------------------------------------- helpers
+
+## Add a backwards-aimed BodyPart to a point of a fresh blueprint.
+func _add_part(bp: RigBlueprint, point_index: int, part_name: String) -> RigBodyPart:
+    var part: RigBodyPart = RigBodyPart.new()
+    part.name = part_name
+    part.position = Vector2(-1.0, 0.0)
+    bp.points()[point_index].add_child(part)
+    return part
 
 func _fresh() -> RigBlueprint:
     var packed: PackedScene = load(SCENE) as PackedScene

@@ -52,7 +52,6 @@ func emit(dt: float, intent: Intent, out: MoveOutput) -> void:
     var rig: CreatureRig = c.rig
     var f: int = rig.front_point
     var m: int = rig.center_point
-    var r: int = rig.rear_point
 
     var gravity: float = c.tune(&"gravity", 900.0)
     var lift_k: float = c.tune(&"fly_lift_k", 1250.0)
@@ -106,8 +105,11 @@ func emit(dt: float, intent: Intent, out: MoveOutput) -> void:
 
     var g: Vector2 = Vector2(0.0, g_v)
     out.add_accel(f, steer + g)
-    out.add_accel(m, g)
-    out.add_accel(r, g)
+    # Every other body point (centre, rear and any trailing chain) rides the same lift and
+    # gravity; only the HEAD steers. Applying it per point keeps a tail in the flight frame.
+    for i in b.pos.size():
+        if i != f:
+            out.add_accel(i, g)
 
     c.turn_rate = Steering.damp_f(c.turn_rate, clampf((target.x - b.pos[m].x) * 0.01, -1.0, 1.0), 3.0, dt)
 

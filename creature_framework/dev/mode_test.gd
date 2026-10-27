@@ -106,6 +106,7 @@ func _ready() -> void:
     await _climb_then_launch()
     await _flight_only()
     await _ambiguous()
+    await _two_limb_crawl()
     _report()
 
 
@@ -268,7 +269,136 @@ func _ambiguous() -> void:
     c.queue_free()
 
 
+# ---------------------------------------------------------------- 4. two-limb crawler
+
+## A Climb-only rig with one pair of legs (like the copied vulture) must still be able to
+## hand-over-hand. The old gait rule required two OTHER grips before letting go, which a
+## two-limb rig can never satisfy, so it welded itself to the first surface it touched.
+##
+## This also pins the surface-owned belly frame: descending a left wall makes the spine
+## vertical, and the air frame (facing alone) used to put the legs on the far side of the
+## body, which reads as walking upside down.
+func _two_limb_crawl() -> void:
+    var floor_rect: Rect2 = Rect2(120.0, 500.0, 500.0, 60.0)
+    _platform(floor_rect)
+    await get_tree().physics_frame
+
+    var c: Creature = _spawn_crawler(Vector2(220.0, 470.0))
+    var brain: GoalBrain = c.brain as GoalBrain
+    var start: Vector2 = c.body.pos[c.rig.center_point]
+    var lowest: float = start.y
+    var belly_min: float = 1.0
+    var belly_wall_min: float = 1.0
+    var grips_max: int = 0
+
+    # Up the left face of the wall.
+    brain.goal = Vector2(320.0, 150.0)
+    _frame = 0
+    while _frame < 8 * 60 and c.body.pos[c.rig.center_point].y > 200.0:
+        await get_tree().physics_frame
+        _frame += 1
+        lowest = minf(lowest, c.body.pos[c.rig.center_point].y)
+        grips_max = maxi(grips_max, c.limbs.grip_count())
+        if c.limbs.grip_count() > 0:
+            var n: Vector2 = c.limbs.grip_normal_avg()
+            var belly: Vector2 = c.body_frame()[1]
+            belly_min = minf(belly_min, belly.dot(-n))
+            if n.x < -0.5:
+                belly_wall_min = minf(belly_wall_min, belly.x)
+    var climbed: float = start.y - lowest
+
+    # Down the same face. Facing is still +1 from the climb, which is exactly the case that
+    # used to flip the body frame.
+    var top: float = c.body.pos[c.rig.center_point].y
+    var bottom: float = top
+    brain.goal = Vector2(320.0, 430.0)
+    _frame = 0
+    while _frame < 8 * 60 and c.body.pos[c.rig.center_point].y < 390.0:
+        await get_tree().physics_frame
+        _frame += 1
+        bottom = maxf(bottom, c.body.pos[c.rig.center_point].y)
+        grips_max = maxi(grips_max, c.limbs.grip_count())
+        if c.limbs.grip_count() > 0:
+            var n: Vector2 = c.limbs.grip_normal_avg()
+            var belly: Vector2 = c.body_frame()[1]
+            belly_min = minf(belly_min, belly.dot(-n))
+            if n.x < -0.5:
+                belly_wall_min = minf(belly_wall_min, belly.x)
+    var descended: float = bottom - top
+
+    notes.append("two-limb mode=%s up=%.0fpx down=%.0fpx belly=-n.min %.2f wall.x_min=%.2f grips_max=%d" % [
+        str(c.loco.current.id), climbed, descended, belly_min, belly_wall_min, grips_max])
+
+    if c.loco.current.id != &"climb":
+        fails.append("two-limb: expected climb-only, got %s" % c.loco.current.id)
+    if climbed < 60.0:
+        fails.append("two-limb: did not crawl up the wall (%.0f px)" % climbed)
+    if descended < 60.0:
+        fails.append("two-limb: did not crawl down the wall (%.0f px)" % descended)
+    if grips_max < 2:
+        fails.append("two-limb: never had both feet down (%d grips)" % grips_max)
+    if belly_min < 0.95:
+        fails.append("two-limb: belly left the surface while gripping (%.2f)" % belly_min)
+    if belly_wall_min < 0.5:
+        fails.append("two-limb: belly pointed away from the wall (x %.2f)" % belly_wall_min)
+    c.queue_free()
+
+
 # ---------------------------------------------------------------- helpers
+
+func _spawn_crawler(origin: Vector2) -> Creature:
+    var rig: CreatureRig = CreatureRig.new()
+    var front: PointDef = PointDef.new()
+    front.name = &"front"
+    front.offset = Vector2(30.0, 0.0)
+    front.mass = 1.0
+    var centre: PointDef = PointDef.new()
+    centre.name = &"center"
+    centre.offset = Vector2.ZERO
+    centre.mass = 1.5
+    var rear: PointDef = PointDef.new()
+    rear.name = &"rear"
+    rear.offset = Vector2(-30.0, 0.0)
+    rear.mass = 1.0
+    rig.points = [front, centre, rear]
+    rig.front_point = 0
+    rig.center_point = 1
+    rig.rear_point = 2
+
+    var link_a: LinkDef = LinkDef.new()
+    link_a.a = 0
+    link_a.b = 1
+    var link_b: LinkDef = LinkDef.new()
+    link_b.a = 1
+    link_b.b = 2
+    rig.links = [link_a, link_b]
+
+    var leg_far: LimbDef = LimbDef.new()
+    leg_far.name = &"leg_far"
+    leg_far.kind = &"leg"
+    leg_far.style = &"walk2"
+    leg_far.anchor_point = 2
+    leg_far.local_offset = Vector2(-2.0, 3.0)
+    leg_far.lane = -1
+    leg_far.reach = 55.0
+    var leg_near: LimbDef = LimbDef.new()
+    leg_near.name = &"leg_near"
+    leg_near.kind = &"leg"
+    leg_near.style = &"walk2"
+    leg_near.anchor_point = 2
+    leg_near.local_offset = Vector2(2.0, 4.0)
+    leg_near.lane = 1
+    leg_near.reach = 55.0
+    rig.limbs = [leg_far, leg_near]
+    rig.locomotors = [ClimbLocomotor]
+
+    var c: Creature = Creature.new()
+    add_child(c)
+    var brain: GoalBrain = GoalBrain.new()
+    brain.goal = origin
+    c.setup(rig, brain, world, origin)
+    return c
+
 
 func _spawn(origin: Vector2, goal: Vector2) -> Creature:
     var c: Creature = Creature.new()

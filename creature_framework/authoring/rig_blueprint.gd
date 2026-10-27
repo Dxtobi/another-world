@@ -12,16 +12,21 @@ extends Node2D
 ##   │  └─ wing_near (RigLimb)
 ##   ├─ rear         (RigPoint)
 ##   │  ├─ leg_far   (RigLimb)
-##   │  └─ leg_near  (RigLimb)
+##   │  ├─ leg_near  (RigLimb)
+##   │  └─ tail      (RigBodyPart, position = aim handle, length = extra points)
 ##   └─ weak_bend    (RigLink, extra front -> rear constraint)
 ##
 ## Consecutive points are linked automatically. A RigLimb must be a direct child of the
-## RigPoint it hangs from. `build_rig()` validates and bakes all of it into the same
-## CreatureRig Resource the rest of the framework already consumes, so no core code knows
-## whether a rig came from a scene or from code.
+## RigPoint it hangs from. A RigBodyPart is also a child of its anchor: it bakes `length`
+## extra points and their links, so one node authors a whole tail or tentacle chain.
+## `build_rig()` validates and bakes all of it into the same CreatureRig Resource the rest
+## of the framework already consumes, so no core code knows whether a rig came from a scene
+## or from code.
 ##
-## Only positions are baked. Point/limb rotation and scale are rejected by validate():
-## the runtime solver owns the transform, and a rest offset is a position, not a pose.
+## Only positions are baked. Point/limb/body-part rotation and scale are rejected by
+## validate(): the runtime solver owns the transform, and a rest offset is a position, not a
+## pose. Extra links join hand-authored points only; generated chain points are linked for
+## you.
 
 @export var front_point: StringName = &"front"
 @export var center_point: StringName = &"center"
@@ -67,6 +72,16 @@ func extra_links() -> Array[RigLink]:
     for child in get_children():
         if child is RigLink:
             out.append(child as RigLink)
+    return out
+
+
+## Every validly parented tail/tentacle, in baked order: point order, then child order.
+func body_parts() -> Array[RigBodyPart]:
+    var out: Array[RigBodyPart] = []
+    for point in points():
+        for child in point.get_children():
+            if child is RigBodyPart:
+                out.append(child as RigBodyPart)
     return out
 
 
@@ -129,6 +144,52 @@ func validate() -> PackedStringArray:
             errors.append("limb '%s' position is not finite" % key)
         if not is_zero_approx(limb.rotation) or not limb.scale.is_equal_approx(Vector2.ONE):
             errors.append("limb '%s' has rotation/scale; only position is baked" % key)
+
+    var all_parts: Array[RigBodyPart] = []
+    _find_body_parts(self, all_parts)
+    var part_names: Dictionary = {}
+    var chain_names: Dictionary = {}
+    for part in all_parts:
+        var key: StringName = StringName(part.name)
+        if String(key).is_empty():
+            errors.append("a body part has an empty name")
+        elif part_names.has(key):
+            errors.append("duplicate body part name '%s'" % key)
+        part_names[key] = true
+
+        var anchor: Node = part.get_parent()
+        if not (anchor is RigPoint):
+            errors.append("body part '%s' must be a direct child of a RigPoint" % key)
+        elif not pts.has(anchor):
+            errors.append("body part '%s' hangs from a RigPoint that is not a direct child of the rig" % key)
+        if not (StringName(part.kind) in [&"tail", &"tentacle"]):
+            errors.append("body part '%s' kind '%s' is unknown (valid: tail, tentacle)" % [
+                key, part.kind])
+        if part.length < 1:
+            errors.append("body part '%s' length must be at least 1 extra point (got %d)" % [
+                key, part.length])
+        if part.spacing <= 0.0 or not is_finite(part.spacing):
+            errors.append("body part '%s' spacing must be finite and > 0 (got %.2f)" % [
+                key, part.spacing])
+        if part.base_mass <= 0.0 or part.tip_mass <= 0.0:
+            errors.append("body part '%s' masses must be > 0 (base %.2f, tip %.2f)" % [
+                key, part.base_mass, part.tip_mass])
+        if not part.position.is_finite() or not part.direction.is_finite():
+            errors.append("body part '%s' position/direction is not finite" % key)
+        if part.auto_direction and part.position.length_squared() <= 0.000001 \
+                and part.direction.length_squared() <= 0.000001:
+            errors.append("body part '%s' has no direction (move the node or set direction)" % key)
+        if not is_zero_approx(part.rotation) or not part.scale.is_equal_approx(Vector2.ONE):
+            errors.append("body part '%s' has rotation/scale; only position is baked" % key)
+
+        for i in range(1, maxi(part.length, 0) + 1):
+            var chain_key: StringName = part.point_name(i)
+            if names.has(chain_key):
+                errors.append("body part '%s' generates point '%s', which collides with an authored point" % [
+                    key, chain_key])
+            elif chain_names.has(chain_key):
+                errors.append("body part '%s' generates duplicate point '%s'" % [key, chain_key])
+            chain_names[chain_key] = true
 
     for link in extra_links():
         if not names.has(link.a):
@@ -212,6 +273,39 @@ func build_rig() -> CreatureRig:
             def.lane = limb.lane
             rig.limbs.append(def)
 
+    # Authored tails/tentacles. Generated points are appended AFTER every authored point so
+    # hand-authored indices never move, and each link run starts at the chain's anchor.
+    for part in body_parts():
+        var anchor_node: RigPoint = part.get_parent() as RigPoint
+        var anchor_index: int = int(index[StringName(anchor_node.name)])
+        var base: Vector2 = anchor_node.position
+        var chain: PackedInt32Array = PackedInt32Array()
+        chain.append(anchor_index)
+        var prev: int = anchor_index
+        var prev_offset: Vector2 = base
+        for k in range(1, part.length + 1):
+            var point_def: PointDef = PointDef.new()
+            point_def.name = part.point_name(k)
+            point_def.offset = base + part.point_offset(k)
+            point_def.mass = part.point_mass(k)
+            point_def.base_depth = anchor_node.base_depth
+            point_def.driven = false
+            rig.points.append(point_def)
+            var idx: int = rig.points.size() - 1
+            index[point_def.name] = idx
+            rig.links.append(_link(prev, idx, prev_offset.distance_to(point_def.offset), 1.0))
+            chain.append(idx)
+            prev = idx
+            prev_offset = point_def.offset
+
+        var body: BodyPartDef = BodyPartDef.new()
+        body.name = StringName(part.name)
+        body.kind = StringName(part.kind)
+        body.points = chain
+        rig.body_parts.append(body)
+        if body.kind == &"tail":
+            rig.authored_tail = true
+
     var tuning_copy: Dictionary = tuning.duplicate(true)
     rig.tuning = tuning_copy
     rig.locomotors = LocomotorCatalog.from_mask(locomotor_flags)
@@ -255,8 +349,8 @@ static func load_rig(scene_path: String, fresh: bool = false) -> CreatureRig:
 func _validate_from_editor() -> void:
     var errors: PackedStringArray = validate()
     if errors.is_empty():
-        print("RigBlueprint '%s': OK (%d points, %d limbs)" % [
-            name, points().size(), limbs().size()])
+        print("RigBlueprint '%s': OK (%d points, %d limbs, %d body parts)" % [
+            name, points().size(), limbs().size(), body_parts().size()])
         return
     for error in errors:
         push_error("RigBlueprint '%s': %s" % [name, error])
@@ -276,6 +370,13 @@ func _find_limbs(node: Node, out: Array[RigLimb]) -> void:
         if child is RigLimb:
             out.append(child as RigLimb)
         _find_limbs(child, out)
+
+
+func _find_body_parts(node: Node, out: Array[RigBodyPart]) -> void:
+    for child in node.get_children():
+        if child is RigBodyPart:
+            out.append(child as RigBodyPart)
+        _find_body_parts(child, out)
 
 
 func _point_by_name(key: StringName) -> RigPoint:
@@ -317,16 +418,20 @@ func _draw() -> void:
     # creature instead of drifting off when points move.
     var bounds: Rect2 = _bounds(pts)
     var mid: float = bounds.position.x + bounds.size.x * 0.5
+    var parts_suffix: String = ""
+    if not body_parts().is_empty():
+        parts_suffix = "  ·  %d parts" % body_parts().size()
     RigDraw.text(self, Vector2(mid, bounds.position.y - 24.0),
-        "%s  ·  %d points  ·  %d limbs  ·  %s" % [
-            name, pts.size(), limbs().size(), _locomotor_text()],
+        "%s  ·  %d points  ·  %d limbs%s  ·  %s" % [
+            name, pts.size(), limbs().size(), parts_suffix, _locomotor_text()],
         12, Color(0.80, 0.90, 1.0), HORIZONTAL_ALIGNMENT_CENTER)
     RigDraw.text(self, Vector2(mid, bounds.position.y - 10.0),
-        "RigBlueprint — move points, add limbs to their anchor",
+        "RigBlueprint — points, limbs on their anchor, a BodyPart for each tail",
         10, Color(0.60, 0.70, 0.85, 0.8), HORIZONTAL_ALIGNMENT_CENTER)
 
 
-## Bounding box of the rest pose, limb reach included. Used to place the header.
+## Bounding box of the rest pose, limb reach and body-part chains included. Used to place
+## the header.
 func _bounds(pts: Array[RigPoint]) -> Rect2:
     var box: Rect2 = Rect2(pts[0].position, Vector2.ZERO)
     for point in pts:
@@ -337,5 +442,9 @@ func _bounds(pts: Array[RigPoint]) -> Rect2:
                 var origin: Vector2 = point.position + limb.position
                 box = box.expand(origin)
                 box = box.expand(origin + Vector2(0.0, limb.reach))
+            elif child is RigBodyPart:
+                var part: RigBodyPart = child as RigBodyPart
+                for k in range(1, part.length + 1):
+                    box = box.expand(point.position + part.point_offset(k))
     return box
 

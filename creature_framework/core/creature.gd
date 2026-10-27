@@ -23,6 +23,7 @@ var step_lift: PackedFloat32Array = PackedFloat32Array()
 ## the direct tip (its flap is already smooth). Never read by logic.
 var limb_view_tip: PackedVector2Array = PackedVector2Array()
 ## Cosmetic tail chain, attached to the rear point. Reads the body, writes only itself.
+## Empty when the rig authors a tail BodyPart (see `CreatureRig.authored_tail`).
 var tail: CosmeticChain = CosmeticChain.new()
 var show_tail: bool = true
 
@@ -82,7 +83,10 @@ func setup(p_rig: CreatureRig, p_brain: Brain, p_world: WorldQuery, origin: Vect
         _swing_dur[i] = 0.1
     var spine_len: float = rig.points[rig.front_point].offset.distance_to(
         rig.points[rig.rear_point].offset)
-    tail.setup(5, body.pos[rig.rear_point], -spine_dir(), clampf(spine_len * 0.11, 6.0, 12.0))
+    # A rig that authors a tail already has a real chain of body points; do not add a second
+    # cosmetic tail on top of it.
+    if not rig.authored_tail:
+        tail.setup(5, body.pos[rig.rear_point], -spine_dir(), clampf(spine_len * 0.11, 6.0, 12.0))
     depth_layer.reset(facing)
 
 
@@ -164,13 +168,35 @@ func spine_dir() -> Vector2:
 ## passes through edge-on (x collapses to 0) and pitch fades out with it, so
 ## limbs foreshorten instead of mirroring in one frame.
 func dir_to_world(local_dir: Vector2) -> Vector2:
+    var frame: Array[Vector2] = body_frame()
+    return frame[0] * local_dir.x + frame[1] * local_dir.y
+
+
+## The body's world frame as `[forward, belly]`.
+##
+## In the air this is the yaw-projected spine frame: forward is squeezed by |facing| while
+## the body turns edge-on, which is what keeps a turnaround continuous. While climbing the
+## held surface owns the belly — the belly faces the wall — because a vertical spine cannot
+## tell you which side of it is the belly. Without this a climber descending a left wall
+## (spine down, facing left) put its legs on the far side and read as upside down.
+func body_frame() -> Array[Vector2]:
     var d: Vector2 = spine_dir()
     var f: Vector2 = d.normalized() if d.length_squared() > 0.0001 else Vector2(facing, 0.0)
+    if limbs != null and loco != null and loco.current != null and loco.current.id == &"climb":
+        var n: Vector2 = limbs.grip_normal_avg()
+        if n.length_squared() > 0.0001:
+            var belly: Vector2 = -n
+            # Flatten the spine onto the surface so the frame stays orthonormal even when
+            # the solver has a point a hair inside or outside the face.
+            var forward: Vector2 = f - belly * f.dot(belly)
+            if forward.length_squared() < 0.0001:
+                forward = belly.orthogonal()
+            return [forward.normalized(), belly]
     # Pitch in the facing frame. atan2 against the facing-mirrored vector stays
     # continuous through vertical (no wrap seam at +-90 degrees, which the spine
     # crosses on hard climbs).
     var pitch: float = atan2(f.y * facing, f.x * facing) * absf(facing)
-    return Vector2(local_dir.x * facing, local_dir.y).rotated(pitch)
+    return [Vector2(facing, 0.0).rotated(pitch), Vector2(0.0, 1.0).rotated(pitch)]
 
 
 func anchor_pos(limb_index: int) -> Vector2:
