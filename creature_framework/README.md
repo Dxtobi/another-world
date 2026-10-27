@@ -398,7 +398,7 @@ the live playground run of the copied vulture crawls ~750 px, climbs to `(609,30
   **9.00 px** segments, survives a teleport and settles to **0.000 px**; a 140 px leg swing bows **16.0 px** off
   the chord, sits at **72.7 px** at half time and lands exactly on target, with a **0.080 s** grip arc; full speed
   gives **0.75** stretch (`1.067 / 0.963`), no grips sag to **0.90**, and the first frame moves only **0.071**.
-  A live run stays finite with **31.7 px** tail sway and **0.18** max stretch. `dev/smooth_demo.tscn` shows the
+  A live run stays finite with **30-32 px** tail sway and **0.18** max stretch. `dev/smooth_demo.tscn` shows the
   tail, eased legs and spine stretch live (`T` turn, `S` slow motion).
 
   ```
@@ -544,7 +544,8 @@ already have harnesses (`VultureRig.build()`).
 godot --headless --path . res://creature_framework/dev/authoring_test.tscn
 ```
 
-`dev/authoring_test.tscn` is the acceptance gate: **88 checks** across five groups — the scene bakes to the
+`dev/authoring_test.tscn` is the acceptance gate: **88 checks** across scene, loader, mutation, validation,
+body-part and runtime groups — the scene bakes to the
 exact reference vulture (3 points, 2 spine links + 1 brace, 4 limbs, anchors, styles, front/centre/rear,
 locomotor order), `load_rig()` returns that same rig, edits to nodes reach the bake (the scene really is
 the source of truth), invalid rigs are rejected (missing point, bad style, lane 0, orphan limb, self
@@ -553,7 +554,7 @@ in 2.5 s with 0 NaN points. The body-part group proves one `RigBodyPart` node ba
 extra points and links after the authored ones, base->tip mass falloff, a recorded `BodyPartDef` index run,
 `authored_tail` set for a tail and not for a tentacle, generated names colliding with authored points
 rejected, and — at runtime — the rig runs 180 ticks with a finite tail, no cosmetic follower chain, and a
-tip that can be pushed sideways (**~18 px** bend) while links hold rest length.
+tip that can be pushed sideways (**~16-18 px** bend) while links hold rest length.
 `grip_test`, `climb_test`, `path_test`, `world_test` and `mode_test` all still pass unchanged against the
 scene-loaded rig.
 
